@@ -21,10 +21,17 @@ load_dotenv(
     dotenv_path=os.path.join(BASE_DIR, ".env")
 )
 
-firebase_credentials_path = os.getenv("FIREBASE_CREDENTIALS")
+firebase_credentials_path = os.getenv(
+    "FIREBASE_CREDENTIALS"
+)
 
 if not firebase_credentials_path:
     raise RuntimeError("FIREBASE_CREDENTIALS is missing")
+
+if not os.path.isabs(firebase_credentials_path):
+    firebase_credentials_path = os.path.join(
+        BASE_DIR, firebase_credentials_path
+    )
 
 if not os.path.isfile(firebase_credentials_path):
     raise RuntimeError("Firebase credentials file not found")
@@ -41,15 +48,34 @@ app = Flask(__name__)
 
 app.register_blueprint(institutions_bp)
 
+allowed_origins = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000"
+]
+
+production_origins = os.getenv("CORS_ORIGINS", "")
+
+allowed_origins.extend(
+    origin.strip().rstrip("/")
+    for origin in production_origins.split(",")
+    if origin.strip()
+)
+
 CORS(app, resources={
     r"/api/*": {
-        "origins": [
-            "http://localhost:3000",
-            "http://127.0.0.1:3000"
-        ],
+        "origins": allowed_origins,
         "allow_headers": [
             "Authorization",
             "Content-Type"
+        ],
+        "methods": [
+            "GET",
+            "POST",
+            "PUT",
+            "PATCH",
+            "DELETE",
+            "OPTIONS",
+            "HEAD"
         ]
     }
 })
@@ -67,7 +93,8 @@ app.register_blueprint(firebase_test_bp)
 app.register_blueprint(auth_bp)
 app.register_blueprint(faculty_registration_bp)
 app.register_blueprint(role_dashboards_bp)
-
+
+
 
 app.register_blueprint(faculty_materials_bp)
 app.register_blueprint(student_materials_bp)
