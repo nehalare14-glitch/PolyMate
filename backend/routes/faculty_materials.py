@@ -1,6 +1,4 @@
 import uuid
-from flask import current_app
-from services.pdf_ai_service import index_material
 from flask import Blueprint, request, jsonify, g
 from werkzeug.utils import secure_filename
 
@@ -11,24 +9,6 @@ from services.profiles import get_profile
 faculty_materials_bp = Blueprint("faculty_materials", __name__)
 
 
-def index_pdf_safely(material_id, storage_path, content):
-    try:
-        return index_material(
-            material_id,
-            storage_path,
-            content
-        )
-
-    except Exception:
-        current_app.logger.exception(
-            "PDF AI indexing failed for material %s",
-            material_id
-        )
-
-        return {
-            "status": "failed",
-            "chunks": 0
-        }
 
 
 BUCKET = "study-materials"
@@ -167,16 +147,10 @@ def upload_pdf():
             "error": "Unable to save material details"
         }), 503
 
-    ai_index = index_pdf_safely(
-        material_id,
-        storage_path,
-        content
-    )
 
     return jsonify({
         "message": "PDF uploaded successfully",
         "material": saved.data[0],
-        "ai_index": ai_index
     }), 201
 
 
@@ -396,25 +370,6 @@ def replace_material_pdf(material_id):
             "error": "Unable to save replacement PDF"
         }), 503
 
-    ai_index = index_pdf_safely(
-        material_id,
-        new_path,
-        content
-    )
-
-    # Remove chunks belonging to the previous PDF.
-    try:
-        (
-            db.table("material_chunks")
-            .delete()
-            .eq("material_id", str(material_id))
-            .eq("storage_path", old_path)
-            .execute()
-        )
-    except Exception:
-        current_app.logger.exception(
-            "Previous PDF chunks require cleanup"
-        )
 
     try:
         db.storage.from_(BUCKET).remove([old_path])
@@ -422,13 +377,11 @@ def replace_material_pdf(material_id):
         return jsonify({
             "message": "PDF replaced successfully",
             "warning": "Previous storage file requires cleanup",
-            "ai_index": ai_index
         })
 
     return jsonify({
         "message": "PDF replaced successfully",
         "material": result.data[0],
-        "ai_index": ai_index
     })
 
 

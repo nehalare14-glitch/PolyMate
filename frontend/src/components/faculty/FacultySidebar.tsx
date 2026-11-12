@@ -38,11 +38,7 @@ const navigation = [
     href: "/faculty/materials",
     icon: Files,
   },
-  {
-    label: "AI Assistant",
-    href: "/faculty/ai-assistant",
-    icon: Bot,
-  },
+  
   {
     label: "My Profile",
     href: "/faculty/profile",

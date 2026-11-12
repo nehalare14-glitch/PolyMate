@@ -1,18 +1,19 @@
 ﻿# PolyMate
 
-PolyMate is a diploma education platform designed
-for polytechnic students and faculty in Telangana.
+PolyMate is an educational platform for Telangana diploma and polytechnic students and faculty.
 
 ## Features
 
+- Student and faculty registration and authentication
+- Google Sign-In and email verification
 - Student and faculty dashboards
-- Firebase authentication
-- Study materials and question papers
-- PDF upload and preview
+- Browse notes, question papers and study materials
+- PDF upload, preview, edit and delete
 - Student bookmarks
-- Faculty management
-- AI-powered learning assistant
-- Automatic multi-model AI routing
+- Faculty approval and management
+- Admin and super-admin dashboards
+- Telangana polytechnic institution directory
+- Light and dark mode
 
 ## Technology Stack
 
@@ -24,37 +25,39 @@ for polytechnic students and faculty in Telangana.
 - Lucide React
 
 ### Backend
-- Python
-- Flask
-- Firebase Admin SDK
+- Python Flask
+- Gunicorn
+- REST APIs
 
 ### Database and Storage
 - Supabase PostgreSQL
 - Supabase Storage
 
-### AI Assistant
-- Ollama
-- Qwen2.5 0.5B - Fast answers
-- Qwen2.5 1.5B - Balanced answers
-- Qwen3 4B Instruct - Advanced answers
+### Authentication
+- Firebase Authentication
+- Firebase Admin SDK
 
 ### Deployment
 - Frontend: Vercel
 - Backend: Render
-- AI: Local Ollama (separate hosting required
-  for public deployment)
+- Version Control: GitHub
 
 ## Project Structure
 
-- frontend/ - Next.js application
-- backend/ - Flask API and AI services
+- frontend/ - Next.js web application
+- backend/ - Python Flask API
+
+## Development
+
+Frontend:
+npm install
+npm run dev
+
+Backend:
+pip install -r requirements.txt
+python app.py
 
 ## Security
 
-Environment variables and private credentials
-are excluded from version control.
-
-## Local Development
-
-Configure Firebase, Supabase and Ollama before
-starting the frontend and backend servers.
+Environment variables and Firebase service account credentials
+must be configured securely and must not be committed to GitHub.

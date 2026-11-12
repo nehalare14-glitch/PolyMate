@@ -120,9 +120,7 @@ from routes.admin_faculty import admin_faculty_bp
 app.register_blueprint(admin_faculty_bp)
 
 
-from routes.ai import ai_bp
 
-app.register_blueprint(ai_bp)
 
 
 if __name__ == "__main__":

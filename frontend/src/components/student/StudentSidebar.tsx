@@ -44,11 +44,7 @@ const navigation = [
     href: "/student/bookmarks",
     icon: Bookmark,
   },
-  {
-    label: "AI Assistant",
-    href: "/student/ai-assistant",
-    icon: Bot,
-  },
+  
   {
     label: "My Profile",
     href: "/student/profile",
