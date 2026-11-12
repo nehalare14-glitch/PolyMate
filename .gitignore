@@ -1,0 +1,77 @@
+﻿# Environment variables and secrets
+.env
+.env.*
+!.env.example
+!.env.sample
+*.pem
+*.key
+*.p12
+*.pfx
+*serviceAccount*.json
+*service-account*.json
+*service_account*.json
+*firebase-adminsdk*.json
+*firebase*credentials*.json
+credentials.json
+secrets.json
+credentials/
+secrets/
+
+# Node.js and Next.js
+node_modules/
+.next/
+out/
+dist/
+build/
+.vercel/
+*.tsbuildinfo
+next-env.d.ts
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+
+# Ollama models
+.ollama/
+models/
+*.gguf
+
+# Backups and temporary files
+*.bak
+*.bak.*
+*.backup
+*.backup*
+*backup*
+*.tmp
+*.log
+typescript-errors.txt
+
+# Local databases
+*.sqlite
+*.sqlite3
+*.db
+
+# IDE and OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Local uploads
+uploads/
+
+# Additional development backups
+*.bak-*
+*.before-*
+*.before.*
+*.old
+*.orig
+
+# Firebase private credentials
+*firebase-admin*.json
+*firebase_admin*.json
+*private-key*.json

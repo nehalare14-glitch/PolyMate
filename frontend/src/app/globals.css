@@ -1,0 +1,93 @@
+﻿@import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --background: #f8fafc;
+  --foreground: #0f172a;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.dark {
+  --background: #0f172a;
+  --foreground: #f1f5f9;
+}
+
+
+/* POLYMATE GLOBAL THEME */
+
+:root {
+  --pm-page: #f8fafc;
+  --pm-surface: #ffffff;
+  --pm-text: #0f172a;
+  --pm-muted: #475569;
+  --pm-border: #cbd5e1;
+  --pm-accent: #2563eb;
+  color-scheme: light;
+}
+
+html.dark {
+  --pm-page: #0f172a;
+  --pm-surface: #1e293b;
+  --pm-text: #f1f5f9;
+  --pm-muted: #cbd5e1;
+  --pm-border: #475569;
+  --pm-accent: #60a5fa;
+  color-scheme: dark;
+}
+
+html,
+body {
+  background-color: var(--pm-page);
+  color: var(--pm-text);
+}
+
+html.dark input:not([type="checkbox"]):not([type="radio"]),
+html.dark select,
+html.dark textarea {
+  background-color: var(--pm-surface);
+  color: var(--pm-text);
+  border-color: var(--pm-border);
+}
+
+html.dark input::placeholder,
+html.dark textarea::placeholder {
+  color: var(--pm-muted);
+}
+
+html.dark .bg-white {
+  background-color: var(--pm-surface);
+}
+
+html.dark .bg-slate-50,
+html.dark .bg-gray-50 {
+  background-color: var(--pm-page);
+}
+
+html.dark .text-slate-900,
+html.dark .text-gray-900,
+html.dark .text-slate-800,
+html.dark .text-gray-800,
+html.dark .text-slate-700 {
+  color: var(--pm-text);
+}
+
+html.dark .border-slate-200,
+html.dark .border-gray-200 {
+  border-color: var(--pm-border);
+}
+
+/* END POLYMATE GLOBAL THEME */
