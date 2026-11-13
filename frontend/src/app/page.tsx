@@ -100,6 +100,13 @@ export default function Home() {
               Privacy Policy
             </Link>
 
+            <Link
+              href="/terms"
+              className="font-medium text-slate-600 transition-colors hover:text-blue-600"
+            >
+              Terms of Service
+            </Link>
+
             <a
               href="mailto:polymate.official@gmail.com"
               className="font-medium text-slate-600 transition-colors hover:text-blue-600"
