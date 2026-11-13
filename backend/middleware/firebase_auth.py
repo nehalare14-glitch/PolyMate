@@ -20,6 +20,8 @@ def require_firebase_auth(view):
         except Exception:
             return jsonify({"error": "Invalid or expired token"}), 401
 
+        # Claims have already passed token and revocation checks.
+        g.firebase_claims = decoded
         g.firebase_uid = decoded["uid"]
         g.firebase_email = decoded.get("email")
         g.firebase_email_verified = decoded.get(

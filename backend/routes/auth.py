@@ -5,6 +5,7 @@ from middleware.firebase_auth import require_firebase_auth
 from services.profiles import (
     create_or_get_profile,
     get_profile,
+    get_complete_profile,
     resolve_institution,
     serialize_profile,
 )
@@ -137,14 +138,12 @@ def current_user():
         }), 403
 
     try:
-        profile = get_profile(g.firebase_uid)
+        profile = get_complete_profile(g.firebase_uid)
 
         if not profile:
             return jsonify({
                 "error": "Profile not found"
             }), 404
-
-        profile = serialize_profile(profile)
 
         return jsonify({
             "user": profile
@@ -220,22 +219,10 @@ def update_current_user():
 @require_firebase_auth
 def sync_admin_email():
     from services.supabase_client import get_supabase
-    from flask import request
     import time
 
-    authorization = request.headers.get("Authorization", "")
-    token = authorization.removeprefix("Bearer ").strip()
-
-    if not authorization.startswith("Bearer ") or not token:
-        return jsonify({"error": "Authentication required"}), 401
-
-    try:
-        claims = firebase_auth.verify_id_token(
-            token,
-            check_revoked=True
-        )
-    except Exception:
-        return jsonify({"error": "Invalid authentication token"}), 401
+    # Reuse claims verified by require_firebase_auth.
+    claims = g.firebase_claims
 
     if claims.get("uid") != g.firebase_uid:
         return jsonify({"error": "Identity mismatch"}), 403
@@ -321,25 +308,10 @@ def sync_admin_email():
 @require_firebase_auth
 def sync_faculty_email():
     import time
-    from flask import request
     from services.supabase_client import get_supabase
 
-    authorization = request.headers.get("Authorization", "")
-    if not authorization.startswith("Bearer "):
-        return jsonify({"error": "Authentication required"}), 401
-
-    token = authorization.removeprefix("Bearer ").strip()
-
-    if not token:
-        return jsonify({"error": "Authentication required"}), 401
-
-    try:
-        claims = firebase_auth.verify_id_token(
-            token,
-            check_revoked=True
-        )
-    except Exception:
-        return jsonify({"error": "Invalid authentication token"}), 401
+    # Reuse claims verified by require_firebase_auth.
+    claims = g.firebase_claims
 
     if claims.get("uid") != g.firebase_uid:
         return jsonify({"error": "Identity mismatch"}), 403

@@ -62,6 +62,51 @@ def prevent_cache(response):
     return response
 
 
+# GET: Retrieve only visible bookmarked material IDs
+@student_bookmarks_bp.get("/api/student/bookmarks/ids")
+@student_only
+def get_bookmark_ids():
+
+    db = get_supabase()
+    ids = []
+    offset = 0
+    batch_size = 500
+
+    while True:
+        result = (
+            db.table("student_bookmarks")
+            .select(
+                "material_id,"
+                "study_materials!inner(id)"
+            )
+            .eq("student_uid", g.firebase_uid)
+            .in_(
+                "study_materials.material_type",
+                ALLOWED_TYPES
+            )
+            .eq("study_materials.status", "published")
+            .order("id")
+            .range(offset, offset + batch_size - 1)
+            .execute()
+        )
+
+        rows = result.data or []
+
+        ids.extend(
+            row["material_id"]
+            for row in rows
+        )
+
+        if len(rows) < batch_size:
+            break
+
+        offset += batch_size
+
+    return jsonify({
+        "ids": ids
+    }), 200
+
+
 # GET: Retrieve saved materials
 @student_bookmarks_bp.get("/api/student/bookmarks")
 @student_only

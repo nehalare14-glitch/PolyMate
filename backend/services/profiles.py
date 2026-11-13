@@ -263,9 +263,29 @@ def profile_integrity_issues(profile):
 
 
 def get_complete_profile(uid):
-    profile = get_profile(uid)
+    """Retrieve profile and institution in one database request."""
 
-    if not profile:
+    result = (
+        get_supabase()
+        .table("profiles")
+        .select(
+            "*,institution:institutions("
+            "id,name,college_code,district,management)"
+        )
+        .eq("firebase_uid", uid)
+        .limit(1)
+        .execute()
+    )
+
+    if not result.data:
         return None
 
-    return serialize_profile(profile)
+    profile = dict(result.data[0])
+    institution = profile.pop("institution", None)
+
+    # An empty dictionary prevents a second lookup
+    # when no related institution exists.
+    return serialize_profile(
+        profile,
+        institution=institution or {},
+    )
