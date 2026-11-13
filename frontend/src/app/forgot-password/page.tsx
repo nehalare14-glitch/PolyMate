@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
@@ -41,7 +41,7 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[#f5f7fb] px-4 py-12 dark:bg-slate-950">
+    <main className="flex min-h-dvh items-center justify-center bg-[#f5f7fb] px-4 py-12 dark:bg-slate-950">
       <div className="w-full max-w-md">
         <Link
           href="/login"

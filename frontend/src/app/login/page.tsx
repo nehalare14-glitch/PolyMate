@@ -131,7 +131,7 @@ export default function LoginPage() {
 
 
   return (
-    <main className="min-h-screen bg-[#f5f7fb] dark:bg-[#0f172a] lg:grid lg:grid-cols-2">
+    <main className="min-h-dvh bg-[#f5f7fb] dark:bg-[#0f172a] lg:grid lg:grid-cols-2">
       <section className="relative hidden overflow-hidden bg-[#102b60] px-10 py-8 text-white lg:flex lg:flex-col lg:justify-between xl:px-12">
         <div className="absolute -right-32 -top-32 h-96 w-96 rounded-full border border-white/10" />
         <div className="absolute -bottom-48 -left-32 h-[500px] w-[500px] rounded-full border border-white/10" />
@@ -191,7 +191,7 @@ export default function LoginPage() {
         </p>
       </section>
 
-      <section className="flex min-h-screen items-center justify-center px-5 py-8 sm:px-10 lg:py-6">
+      <section className="flex min-h-dvh items-center justify-center px-5 py-8 sm:px-10 lg:py-6">
         <div className="w-full max-w-[430px]">
           <Link
             href="/"

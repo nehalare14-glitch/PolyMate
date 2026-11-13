@@ -137,7 +137,7 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F6F8FC] text-slate-900 dark:bg-[#0B1220] dark:text-slate-100">
+    <div className="min-h-dvh bg-[#F6F8FC] text-slate-900 dark:bg-[#0B1220] dark:text-slate-100">
       <aside
         className={`fixed inset-y-0 left-0 z-50 w-64 max-w-[85vw] overflow-y-auto border-r border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 transition-transform lg:translate-x-0 ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"

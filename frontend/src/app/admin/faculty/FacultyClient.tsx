@@ -416,7 +416,7 @@ export default function FacultyClient() {
   ];
 
   return (
-    <main className="min-h-screen bg-[#F6F8FC] p-4 text-slate-900
+    <main className="min-h-dvh bg-[#F6F8FC] p-4 text-slate-900
       dark:bg-[#0B1220] dark:text-slate-100 md:p-8">
 
       <div className="mx-auto max-w-7xl space-y-6">

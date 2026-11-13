@@ -371,7 +371,7 @@ export default function MaterialsClient() {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
+    <div className="min-h-dvh bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
 
       <aside className={`fixed inset-y-0 left-0 z-50 w-64 max-w-[85vw] overflow-y-auto border-r border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900 lg:translate-x-0 ${
         sidebar ? "translate-x-0" : "-translate-x-full"

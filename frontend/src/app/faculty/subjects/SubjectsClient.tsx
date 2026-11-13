@@ -38,7 +38,7 @@ export default function SubjectsClient() {
   }, [search]);
 
   return (
-    <main className="min-h-screen bg-[#F6F8FC] px-4 py-8 text-slate-900 dark:bg-[#0B1220] dark:text-white sm:px-8">
+    <main className="min-h-dvh bg-[#F6F8FC] px-4 py-8 text-slate-900 dark:bg-[#0B1220] dark:text-white sm:px-8">
       <div className="mx-auto max-w-5xl">
         <Link
           href="/faculty/dashboard"

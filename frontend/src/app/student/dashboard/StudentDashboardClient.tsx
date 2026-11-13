@@ -220,11 +220,11 @@ export default function StudentDashboardPage() {
     "S";
 
   return (
-    <div className="min-h-screen bg-[#F6F8FC] text-slate-900 dark:bg-[#0B1220] dark:text-[#F1F5F9]">
+    <div className="min-h-dvh bg-[#F6F8FC] text-slate-900 dark:bg-[#0B1220] dark:text-[#F1F5F9]">
 
       <StudentSidebar />
 
-      <main className="min-h-screen px-4 pb-12 pt-24 sm:px-6 md:ml-64 md:px-8 md:pt-10 xl:px-10">
+      <main className="min-h-dvh px-4 pb-12 pt-24 sm:px-6 md:ml-64 md:px-8 md:pt-10 xl:px-10">
 
         <div className="mx-auto max-w-7xl space-y-7">
 

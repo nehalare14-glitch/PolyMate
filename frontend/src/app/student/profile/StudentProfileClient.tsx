@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 
 import { useEffect, useState, type FormEvent } from "react";
@@ -192,10 +192,10 @@ export default function StudentProfilePage() {
     "mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 dark:border-slate-700 dark:bg-slate-950 dark:text-white";
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-white">
+    <div className="min-h-dvh bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-white">
       <StudentSidebar />
 
-      <main className="min-h-screen pt-20 md:ml-64 md:pt-0">
+      <main className="min-h-dvh pt-20 md:ml-64 md:pt-0">
         <div className="mx-auto max-w-5xl px-5 py-8 md:px-10 md:py-12">
           <div className="mb-8">
             <p className="text-xs font-bold uppercase tracking-widest text-blue-700 dark:text-blue-400">

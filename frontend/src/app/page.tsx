@@ -1,9 +1,9 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import { BookOpen, GraduationCap, FileText } from "lucide-react";
 
 export default function Home() {
   return (
-    <main className="min-h-screen bg-slate-50 text-slate-900">
+    <main className="min-h-dvh bg-slate-50 text-slate-900">
       <header className="border-b border-slate-200 bg-white">
         <nav className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
           <Link href="/" className="flex items-center gap-2 text-xl font-bold text-blue-700">

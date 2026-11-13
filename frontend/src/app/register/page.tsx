@@ -156,7 +156,7 @@ export default function RegisterPage() {
     "w-full rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 px-4 py-3 text-[#111827] dark:text-slate-100 text-[#111827] dark:text-slate-100 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100";
 
   return (
-    <main className="min-h-screen bg-[#f5f7fb] dark:bg-[#0f172a] px-4 py-10">
+    <main className="min-h-dvh bg-[#f5f7fb] dark:bg-[#0f172a] px-4 py-10">
       <div className="mx-auto max-w-xl">
         <Link
           href="/"

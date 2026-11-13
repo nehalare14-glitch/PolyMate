@@ -157,7 +157,7 @@ export default function InstitutionsClient() {
   ];
 
   return (
-    <main className="min-h-screen bg-slate-50 p-3 sm:p-5 text-slate-900 dark:bg-slate-950 dark:text-slate-100 md:p-8">
+    <main className="min-h-dvh bg-slate-50 p-3 sm:p-5 text-slate-900 dark:bg-slate-950 dark:text-slate-100 md:p-8">
 
       <div className="mx-auto max-w-7xl space-y-6">
 

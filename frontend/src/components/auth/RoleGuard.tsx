@@ -100,7 +100,7 @@ export default function RoleGuard({
 
   if (error) {
     return (
-      <main className="flex min-h-screen items-center justify-center p-6">
+      <main className="flex min-h-dvh items-center justify-center p-6">
         <div className="max-w-md text-center">
           <h1 className="text-xl font-semibold">
             Access verification failed
@@ -122,7 +122,7 @@ export default function RoleGuard({
 
   if (!authorized) {
     return (
-      <main className="flex min-h-screen items-center justify-center">
+      <main className="flex min-h-dvh items-center justify-center">
         <p className="text-sm text-slate-500">
           Verifying your account permissions...
         </p>
