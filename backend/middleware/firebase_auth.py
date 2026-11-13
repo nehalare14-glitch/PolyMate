@@ -26,11 +26,14 @@ def require_firebase_auth(view):
             "email_verified", False
         )
 
-        # Only student registration may run before verification.
+        # Only registration endpoints may run before verification.
         # All other protected routes require a verified email.
         if (
             not g.firebase_email_verified
-            and request.endpoint != "auth.register_user"
+            and request.endpoint not in {
+                "auth.register_user",
+                "faculty_registration.register_faculty",
+            }
         ):
             return jsonify({
                 "error": "Email verification required"

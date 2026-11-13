@@ -128,6 +128,61 @@ export default function StudentMaterials({
   const [page, setPage] = useState(1);
   const pageSize = 12;
 
+  const [totalMaterials, setTotalMaterials] = useState(0);
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [serverSubjects, setServerSubjects] = useState<string[]>([]);
+  const [subjectError, setSubjectError] = useState("");
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setDebouncedSearch(search.trim());
+    }, 350);
+
+    return () => window.clearTimeout(timer);
+  }, [search]);
+
+  useEffect(() => {
+    if (bookmarksOnly) return;
+
+    let active = true;
+
+    async function loadSubjects() {
+      setSubjectError("");
+
+      try {
+        const params = new URLSearchParams({
+          material_type: materialType,
+        });
+
+        if (branch) params.set("branch", branch);
+        if (semester) params.set("semester", semester);
+
+        const data = await request(
+          `/api/student/materials/subjects?${params}`
+        );
+
+        if (active) {
+          setServerSubjects(data.subjects ?? []);
+        }
+      } catch (err) {
+        if (active) {
+          setServerSubjects([]);
+          setSubjectError(
+            err instanceof Error
+              ? err.message
+              : "Unable to load subject filters."
+          );
+        }
+      }
+    }
+
+    void loadSubjects();
+
+    return () => {
+      active = false;
+    };
+  }, [materialType, branch, semester, bookmarksOnly, retry]);
+
   const [preview, setPreview] =
     useState<{ title: string; url: string } | null>(
       null
@@ -180,45 +235,38 @@ export default function StudentMaterials({
           return;
         }
 
-        let apiPage = 1;
-        const limit = 100;
+        const params = new URLSearchParams({
+          material_type: materialType,
+          page: String(page),
+          limit: String(pageSize),
+        });
 
-        while (active) {
-          const params = new URLSearchParams({
-            material_type: materialType,
-            page: String(apiPage),
-            limit: String(limit),
-          });
+        if (branch) params.set("branch", branch);
+        if (semester) params.set("semester", semester);
+        if (subject) params.set("subject", subject);
 
-          if (branch) {
-            params.set("branch", branch);
-          }
-
-          if (semester) {
-            params.set("semester", semester);
-          }
-
-          const data = await request(
-            `/api/student/materials?${params}`
-          );
-
-          const rows: Material[] =
-            data.materials ?? [];
-
-          found.push(...rows);
-
-          if (
-            rows.length < limit ||
-            apiPage * limit >= data.total
-          ) {
-            break;
-          }
-
-          apiPage += 1;
+        if (debouncedSearch) {
+          params.set("search", debouncedSearch);
         }
 
+        const data = await request(
+          `/api/student/materials?${params}`
+        );
+
         if (active) {
-          setMaterials(found);
+          const total = Number(data.total ?? 0);
+          const lastPage = Math.max(
+            1,
+            Math.ceil(total / pageSize)
+          );
+
+          setTotalMaterials(total);
+
+          if (page > lastPage) {
+            setPage(lastPage);
+          } else {
+            setMaterials(data.materials ?? []);
+          }
         }
 
       } catch (err) {
@@ -243,7 +291,18 @@ export default function StudentMaterials({
       active = false;
     };
 
-  }, [materialType, branch, semester, retry, bookmarksOnly, savedType]);
+  }, [
+    materialType,
+    branch,
+    semester,
+    subject,
+    debouncedSearch,
+    page,
+    pageSize,
+    retry,
+    bookmarksOnly,
+    savedType,
+  ]);
 
   useEffect(() => {
     let active = true;
@@ -326,6 +385,10 @@ export default function StudentMaterials({
   }
 
   const subjectOptions = useMemo(() => {
+    if (!bookmarksOnly) {
+      return serverSubjects;
+    }
+
     return Array.from(
       new Set(
         materials
@@ -337,9 +400,11 @@ export default function StudentMaterials({
           .filter(Boolean)
       )
     ).sort((a, b) => a.localeCompare(b));
-  }, [materials, branch, semester]);
+  }, [materials, branch, semester, bookmarksOnly, serverSubjects]);
 
   const filtered = useMemo(() => {
+    if (!bookmarksOnly) return materials;
+
     const query = search.trim().toLowerCase();
 
     return materials.filter((item) => {
@@ -354,19 +419,25 @@ export default function StudentMaterials({
         (!semester || String(item.semester) === semester)
       );
     });
-  }, [materials, search, subject, branch, semester]);
+  }, [materials, search, subject, branch, semester, bookmarksOnly]);
+
+  const totalCount = bookmarksOnly
+    ? filtered.length
+    : totalMaterials;
 
   const totalPages = Math.max(
     1,
-    Math.ceil(filtered.length / pageSize)
+    Math.ceil(totalCount / pageSize)
   );
 
   const currentPage = Math.min(page, totalPages);
 
-  const visible = filtered.slice(
-    (currentPage - 1) * pageSize,
-    currentPage * pageSize
-  );
+  const visible = bookmarksOnly
+    ? filtered.slice(
+        (currentPage - 1) * pageSize,
+        currentPage * pageSize
+      )
+    : materials;
 
   function resetFilters() {
     setBranch("");
@@ -431,9 +502,9 @@ export default function StudentMaterials({
 
       <StudentSidebar />
 
-      <main className="min-h-dvh px-4 pb-12 pt-24 sm:px-6 md:ml-64 md:px-8 md:pt-10 xl:px-10">
+      <main className="min-h-dvh min-w-0 px-3 pb-8 pt-20 sm:px-6 sm:pb-12 sm:pt-24 md:ml-64 md:px-8 md:pt-10 xl:px-10">
 
-        <div className="mx-auto max-w-7xl space-y-6">
+        <div className="mx-auto min-w-0 max-w-7xl space-y-5 sm:space-y-6">
 
           {/* Page Header */}
 
@@ -487,7 +558,7 @@ export default function StudentMaterials({
 
           <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-[#30415D] dark:bg-[#0F1D38] sm:p-5">
 
-            <div className="grid gap-4 lg:grid-cols-5 lg:items-end">
+            <div className="grid min-w-0 gap-3 sm:gap-4 lg:grid-cols-5 lg:items-end">
 
               <div className="lg:col-span-2">
 
@@ -508,6 +579,7 @@ export default function StudentMaterials({
                   <input
                     id="material-search"
                     type="search"
+                    maxLength={120}
                     value={search}
                     onChange={(event) => {
                       setSearch(event.target.value);
@@ -630,6 +702,23 @@ export default function StudentMaterials({
 
             </div>
 
+            {subjectError && !bookmarksOnly && (
+              <div
+                role="alert"
+                className="mt-3 text-sm text-red-600 dark:text-red-400"
+              >
+                <p>{subjectError}</p>
+
+                <button
+                  type="button"
+                  onClick={() => setRetry((n) => n + 1)}
+                  className="mt-1 font-semibold underline"
+                >
+                  Retry subject filters
+                </button>
+              </div>
+            )}
+
             {(branch || semester || search || subject) && (
 
               <div className="mt-4 flex justify-end">
@@ -665,7 +754,7 @@ export default function StudentMaterials({
 
               {!loading && !error && (
                 <span className="shrink-0 text-xs text-slate-500 dark:text-slate-400">
-                  {filtered.length} {filtered.length === 1 ? "Material" : "Materials"}
+                  {totalCount} {totalCount === 1 ? "Material" : "Materials"}
                 </span>
               )}
 
@@ -729,7 +818,7 @@ export default function StudentMaterials({
 
             ) : (
 
-              <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              <div className="mt-4 grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-3">
 
                 {visible.map((material) => (
 
@@ -771,7 +860,7 @@ export default function StudentMaterials({
                             : "Save bookmark"
                         }
                         onClick={() => void toggleBookmark(material)}
-                        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border transition-colors disabled:opacity-50 ${
+                        className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border transition-colors disabled:opacity-50 ${
                           bookmarkIds.has(material.id)
                             ? "border-blue-200 bg-blue-50 text-blue-600 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-300"
                             : "border-slate-200 text-slate-400 hover:bg-blue-50 hover:text-blue-600 dark:border-[#30415D] dark:hover:bg-[#223553]"
@@ -926,7 +1015,7 @@ export default function StudentMaterials({
           className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/70 sm:p-6"
         >
 
-          <div className="flex h-[100dvh] w-full max-w-6xl flex-col overflow-hidden bg-white dark:bg-[#0F1D38] sm:h-[92dvh] sm:rounded-2xl">
+          <div className="flex h-dvh min-w-0 w-full max-w-6xl flex-col overflow-hidden bg-white dark:bg-[#0F1D38] sm:h-[92dvh] sm:rounded-2xl">
 
             <header className="flex items-center justify-between gap-3 border-b border-slate-200 p-4 dark:border-[#30415D]">
 

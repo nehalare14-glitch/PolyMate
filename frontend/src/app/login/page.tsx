@@ -83,16 +83,13 @@ export default function LoginPage() {
     }
   }
   async function handleGoogleLogin() {
-    console.log("[PolyMate] Google button clicked");
     setError("");
     setLoading(true);
 
     try {
-      console.log("[PolyMate] Opening Google popup");
 
       const profile = await loginWithGoogle() as Profile;
 
-      console.log("[PolyMate] Google authentication successful");
 
       if (profile.user.role !== "student") {
         await auth.signOut();
@@ -105,7 +102,6 @@ export default function LoginPage() {
       router.replace("/student/dashboard");
 
     } catch (err) {
-      console.error("[PolyMate] Google Sign-In error:", err);
 
       if (
         err instanceof Error &&
@@ -321,7 +317,7 @@ export default function LoginPage() {
           <div className="my-4 flex items-center gap-4">
             <div className="h-px flex-1 bg-slate-200" />
             <span className="text-xs font-medium uppercase tracking-wider text-slate-400">
-              or sign in with email
+              New to PolyMate?
             </span>
             <div className="h-px flex-1 bg-slate-200" />
           </div>
@@ -330,7 +326,7 @@ export default function LoginPage() {
 
           <div className="mt-5">
             <p className="mb-4 text-center text-sm text-[#111827] dark:text-slate-100">
-              New to PolyMate? Choose your account type
+              Choose your account type
             </p>
 
             <div className="grid grid-cols-2 gap-3">

@@ -41,15 +41,19 @@ async function getVerifiedToken() {
     throw new Error("You are not signed in.");
   }
 
-  await user.reload();
-
   if (!user.emailVerified) {
-    throw new Error(
-      "Your email is not verified in Firebase. Please verify your email using the verification link, then sign in again."
-    );
+    await user.reload();
+
+    if (!user.emailVerified) {
+      throw new Error(
+        "Your email is not verified in Firebase. Please verify your email using the verification link, then sign in again."
+      );
+    }
+
+    return user.getIdToken(true);
   }
 
-  return user.getIdToken(true);
+  return user.getIdToken();
 }
 
 async function apiRequest(path: string, method = "GET") {
@@ -157,7 +161,16 @@ export async function resendVerificationEmail() {
 
 
 
-export async function submitFacultyApplication(fullName: string, facultyBranch: string) {
+export async function submitFacultyApplication(
+  fullName: string,
+  facultyBranch: string,
+  institutionCode: string
+) {
+  const code = institutionCode.trim();
+
+  if (!code) {
+    throw new Error("Please select your institution.");
+  }
   const name = fullName.trim();
 
   if (name.length < 2 || name.length > 80) {
@@ -170,7 +183,14 @@ export async function submitFacultyApplication(fullName: string, facultyBranch: 
     throw new Error("Please select a valid faculty branch.");
   }
 
-  const token = await getVerifiedToken();
+  const user = auth.currentUser;
+
+  if (!user) {
+    throw new Error("You are not signed in.");
+  }
+
+  // Registration is allowed before email verification.
+  const token = await user.getIdToken(true);
 
   const response = await fetch(
     `${API_URL}/api/auth/register/faculty`,
@@ -180,8 +200,13 @@ export async function submitFacultyApplication(fullName: string, facultyBranch: 
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({ full_name: name, faculty_branch: facultyBranch }),
+      body: JSON.stringify({
+        full_name: name,
+        faculty_branch: facultyBranch,
+        institution_code: code,
+      }),
       cache: "no-store",
+      signal: AbortSignal.timeout(20000),
     }
   );
 
@@ -229,6 +254,7 @@ export async function submitStudentRegistration(
       institution_code: code,
     }),
     cache: "no-store",
+    signal: AbortSignal.timeout(20000),
   });
 
   const data = await response.json();
@@ -247,11 +273,7 @@ export async function getRecentStudentMaterials() {
   return apiRequest("/api/student/materials/recent");
 }
 
-export async function getStudentMaterialPreview(id: string) {
-  return apiRequest(
-    `/api/student/materials/${encodeURIComponent(id)}/preview`
-  );
-}
+
 
 export type BookmarkedMaterial = {
   id: string;

@@ -87,7 +87,9 @@ def update_role(uid, role):
     return result.data[0] if result.data else None
 
 
-def create_faculty_application(uid, email, name, faculty_branch):
+def create_faculty_application(
+    uid, email, name, faculty_branch, institution_id
+):
     """
     Create a pending faculty application.
     Never modify an existing user's role.
@@ -105,6 +107,9 @@ def create_faculty_application(uid, email, name, faculty_branch):
 
     if faculty_branch not in allowed_branches:
         raise ValueError("Invalid faculty branch")
+
+    if institution_id is None:
+        raise ValueError("Institution is required")
 
     existing = get_profile(uid)
 
@@ -126,6 +131,7 @@ def create_faculty_application(uid, email, name, faculty_branch):
                 "full_name": name.strip(),
                 "role": "faculty",
                 "faculty_branch": faculty_branch,
+                "institution_id": institution_id,
                 "approval_status": "pending",
             },
             on_conflict="firebase_uid",
@@ -145,3 +151,121 @@ def create_faculty_application(uid, email, name, faculty_branch):
         )
 
     return profile
+
+
+def resolve_institution(code):
+    """Resolve a valid institution for new registrations."""
+
+    if not isinstance(code, str):
+        raise ValueError("Institution code is required")
+
+    code = code.strip()
+
+    if not code or len(code) > 20:
+        raise ValueError("Invalid institution code")
+
+    result = (
+        get_supabase()
+        .table("institutions")
+        .select("id,name,college_code,district,management")
+        .eq("college_code", code)
+        .eq("active", True)
+        .eq("reviewed", True)
+        .limit(1)
+        .execute()
+    )
+
+    if not result.data:
+        raise ValueError("Selected institution is not available")
+
+    return result.data[0]
+
+
+def serialize_profile(profile, institution=None):
+    """Return one consistent profile representation."""
+
+    if not profile:
+        return None
+
+    result = dict(profile)
+    institution_id = result.get("institution_id")
+
+    if institution_id is not None and institution is None:
+        response = (
+            get_supabase()
+            .table("institutions")
+            .select("id,name,college_code,district,management")
+            .eq("id", institution_id)
+            .limit(1)
+            .execute()
+        )
+
+        institution = response.data[0] if response.data else None
+
+    institution = institution or {}
+
+    result["institution_name"] = institution.get("name")
+    result["college_code"] = institution.get("college_code")
+    result["district"] = institution.get("district")
+    result["management"] = institution.get("management")
+
+    result["institution"] = (
+        {
+            "id": institution.get("id"),
+            "name": institution.get("name"),
+            "college_code": institution.get("college_code"),
+            "district": institution.get("district"),
+            "management": institution.get("management"),
+        }
+        if institution else None
+    )
+
+    return result
+
+
+def profile_integrity_issues(profile):
+    """Identify missing or invalid required profile fields."""
+
+    issues = []
+
+    for field in ("firebase_uid", "full_name", "email"):
+        value = profile.get(field)
+
+        if not isinstance(value, str) or not value.strip():
+            issues.append(field)
+
+    role = profile.get("role")
+
+    if role not in ALLOWED_ROLES:
+        issues.append("role")
+
+    if role in ("student", "faculty"):
+        if profile.get("institution_id") is None:
+            issues.append("institution_id")
+        elif not profile.get("institution"):
+            issues.append("institution_reference")
+
+    if role == "faculty":
+        branches = {
+            "CSE", "ECE", "EEE", "MEC",
+            "CIVIL", "AIML", "CCP"
+        }
+
+        if profile.get("faculty_branch") not in branches:
+            issues.append("faculty_branch")
+
+        if profile.get("approval_status") not in {
+            "pending", "approved", "rejected"
+        }:
+            issues.append("approval_status")
+
+    return issues
+
+
+def get_complete_profile(uid):
+    profile = get_profile(uid)
+
+    if not profile:
+        return None
+
+    return serialize_profile(profile)

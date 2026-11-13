@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState } from "react";
 import { usePathname } from "next/navigation";
@@ -43,7 +43,7 @@ const navigation = [
     href: "/student/bookmarks",
     icon: Bookmark,
   },
-  
+
   {
     label: "My Profile",
     href: "/student/profile",
@@ -94,7 +94,7 @@ export default function StudentSidebar() {
       <aside
         id="student-sidebar"
         className={`
-          fixed inset-y-0 left-0 z-50 flex w-64 flex-col
+          fixed inset-y-0 left-0 z-50 flex w-64 max-w-[85vw] flex-col
           border-r border-slate-300 bg-white
           text-slate-800 dark:border-[#30415D]
           dark:bg-[#0F1D38] dark:text-[#F1F5F9]
@@ -105,7 +105,7 @@ export default function StudentSidebar() {
           ${open ? "translate-x-0" : "-translate-x-full"}
         `}
       >
-        <div className="flex h-16 items-center justify-between border-b border-slate-300 px-5 dark:border-[#30415D]">
+        <div className="flex h-16 shrink-0 items-center justify-between border-b border-slate-300 px-5 dark:border-[#30415D]">
           <Link
             href="/student/dashboard"
             onClick={() => setOpen(false)}
@@ -129,7 +129,7 @@ export default function StudentSidebar() {
 
         <nav
           aria-label="Student navigation"
-          className="flex-1 space-y-1 overflow-y-auto p-3"
+          className="min-h-0 flex-1 space-y-1 overflow-y-auto overscroll-contain p-3"
         >
           <p className="px-3 py-3 text-xs font-semibold uppercase tracking-wider text-slate-400">
             Student Portal
@@ -166,21 +166,10 @@ export default function StudentSidebar() {
           })}
         </nav>
 
-        <div className="border-t border-slate-300 p-3 dark:border-[#30415D]">
+        <div className="shrink-0 border-t border-slate-300 p-3 dark:border-[#30415D]">
           <SignOutButton />
         </div>
       </aside>
     </>
   );
 }
-
-
-
-
-
-
-
-
-
-
-

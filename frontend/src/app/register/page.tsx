@@ -16,12 +16,16 @@ import {
 } from "lucide-react";
 import {
   createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
   updateProfile,
   sendEmailVerification,
   signOut,
 } from "firebase/auth";
 import { auth } from "@/lib/firebase";
-import { submitStudentRegistration } from "@/lib/auth-service";
+import {
+  submitStudentRegistration,
+  submitFacultyApplication,
+} from "@/lib/auth-service";
 
 type AccountType = "student" | "faculty";
 
@@ -70,8 +74,15 @@ export default function RegisterPage() {
 
   async function handleRegister(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+
+    if (loading) return;
+
     setError("");
     setSuccess("");
+
+    const fullName = name.trim();
+    const collegeCode = institutionCode.trim();
+    const accountEmail = email.trim();
 
     if (password !== confirmPassword) {
       setError("Passwords do not match.");
@@ -83,77 +94,173 @@ export default function RegisterPage() {
       return;
     }
 
-    if (name.trim().length < 2 || name.trim().length > 80) {
+    if (fullName.length < 2 || fullName.length > 80) {
       setError("Full name must contain 2 to 80 characters.");
       return;
     }
 
-    if (!institutionCode.trim()) {
+    if (!collegeCode) {
       setError("Please select your institution.");
+      return;
+    }
+
+    const branches = [
+      "CSE", "ECE", "EEE", "MEC",
+      "CIVIL", "AIML", "CCP"
+    ];
+
+    if (
+      type === "faculty" &&
+      !branches.includes(facultyBranch)
+    ) {
+      setError("Please select a valid faculty branch.");
       return;
     }
 
     setLoading(true);
 
+    let registrationUser = null;
+    let profileSaved = false;
+
     try {
-      const result = await createUserWithEmailAndPassword(
-        auth,
-        email.trim(),
-        password
-      );
-
-
-
-      localStorage.setItem(
-        `polymate-registration-${result.user.uid}`,
-        JSON.stringify({
-          type,
-          fullName: name.trim(),
-          institutionCode,
-          ...(type === "faculty" ? { facultyBranch } : {}),
-        })
-      );
-
-      // Save the student's registered name in Firebase.
-      if (type === "student") {
-        await updateProfile(result.user, {
-          displayName: name.trim(),
-        });
-
-        // Save the real profile in Supabase immediately.
-        // Do not wait for the first login.
-        await submitStudentRegistration(
-          name.trim(),
-          institutionCode
+      try {
+        const result = await createUserWithEmailAndPassword(
+          auth,
+          accountEmail,
+          password
         );
 
-        // The server has confirmed that the profile is saved.
-        localStorage.removeItem(
-          `polymate-registration-${result.user.uid}`
+        registrationUser = result.user;
+      } catch (creationError) {
+        const code = (
+          creationError as { code?: string }
+        )?.code;
+
+        if (code !== "auth/email-already-in-use") {
+          throw creationError;
+        }
+
+        // Recover an unfinished registration securely.
+        // The user must prove ownership with their password.
+        const result = await signInWithEmailAndPassword(
+          auth,
+          accountEmail,
+          password
+        );
+
+        registrationUser = result.user;
+      }
+
+      // Save the complete profile before reporting success.
+      // Supabase is the permanent source of registration data.
+      const response =
+        type === "faculty"
+          ? await submitFacultyApplication(
+              fullName,
+              facultyBranch,
+              collegeCode
+            )
+          : await submitStudentRegistration(
+              fullName,
+              collegeCode
+            );
+
+      const profile = response?.user;
+
+      if (
+        !profile ||
+        profile.role !== type ||
+        !profile.full_name ||
+        !profile.email ||
+        profile.institution_id == null ||
+        !profile.institution_name
+      ) {
+        throw new Error(
+          "Registration details could not be confirmed. Please retry."
         );
       }
 
-      await sendEmailVerification(result.user);
-      await signOut(auth);
+      // Existing profiles must not be silently overwritten.
+      if (
+        String(profile.college_code) !== collegeCode ||
+        profile.full_name !== fullName ||
+        (
+          type === "faculty" &&
+          profile.faculty_branch !== facultyBranch
+        )
+      ) {
+        throw new Error(
+          "This account already has different registered details. Sign in to view your existing profile."
+        );
+      }
 
-      setSuccess(
-        type === "faculty"
-          ? "Faculty account created! Verify your email before signing in."
-          : "Account created! Check your email to verify your account."
-      );
+      profileSaved = true;
+
+      // Browser storage is no longer required for new registrations.
+      // Remove only the old recovery data belonging to this UID.
+      try {
+        const key =
+          `polymate-registration-${registrationUser.uid}`;
+
+        localStorage.removeItem(key);
+        sessionStorage.removeItem(key);
+      } catch {
+        // Storage availability must not block registration.
+      }
+
+      // Supabase is authoritative for profile information.
+      // Firebase display name is a convenience, not a dependency.
+      try {
+        await updateProfile(registrationUser, {
+          displayName: fullName,
+        });
+      } catch {
+        // A display-name update failure does not lose the profile.
+      }
+
+      await registrationUser.reload();
+
+      if (!registrationUser.emailVerified) {
+        await sendEmailVerification(registrationUser);
+
+        setSuccess(
+          type === "faculty"
+            ? "Faculty registration saved successfully! Verify your email, then wait for Admin approval."
+            : "Registration saved successfully! Verify your email before signing in."
+        );
+      } else {
+        setSuccess(
+          type === "faculty"
+            ? "Faculty registration is complete. Sign in to check your approval status."
+            : "Registration is complete. You can now sign in."
+        );
+      }
     } catch (err) {
-      setError(
+      const message =
         err instanceof Error
           ? err.message
-          : "Registration failed."
+          : "Registration failed.";
+
+      setError(
+        profileSaved
+          ? "Your profile is saved, but email verification could not be completed. Sign in to resend verification. " + message
+          : message + " If your account was already created, retry registration using the same email and password."
       );
     } finally {
+      if (registrationUser) {
+        try {
+          await signOut(auth);
+        } catch {
+          // Preserve the original registration result.
+        }
+      }
+
       setLoading(false);
     }
   }
 
   const fieldClass =
-    "w-full rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 px-4 py-3 text-[#111827] dark:text-slate-100 text-[#111827] dark:text-slate-100 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100";
+    "w-full rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 px-4 py-3 text-[#111827] dark:text-slate-100 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100";
 
   return (
     <main className="min-h-dvh bg-[#f5f7fb] dark:bg-[#0f172a] px-4 py-10">

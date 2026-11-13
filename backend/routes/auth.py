@@ -2,7 +2,12 @@ from flask import Blueprint, jsonify, g
 from firebase_admin import auth as firebase_auth
 
 from middleware.firebase_auth import require_firebase_auth
-from services.profiles import create_or_get_profile, get_profile
+from services.profiles import (
+    create_or_get_profile,
+    get_profile,
+    resolve_institution,
+    serialize_profile,
+)
 
 auth_bp = Blueprint("auth", __name__)
 
@@ -49,20 +54,10 @@ def register_user():
                 "error": "This account has a different role"
             }), 409
 
-        institution = (
-            db.table("institutions")
-            .select("id,name")
-            .eq("college_code", code)
-            .limit(1)
-            .execute()
-        )
-
-        if not institution.data:
-            return jsonify({
-                "error": "Selected institution was not found"
-            }), 400
-
-        college = institution.data[0]
+        try:
+            college = resolve_institution(code)
+        except ValueError as error:
+            return jsonify({"error": str(error)}), 400
 
         profile = create_or_get_profile(
             uid=g.firebase_uid,
@@ -121,7 +116,7 @@ def register_user():
                 "error": "Registration details were not saved. Please try again."
             }), 503
 
-        profile["institution_name"] = college["name"]
+        profile = serialize_profile(profile)
 
         return jsonify({
             "message": "Student registration completed",
@@ -149,25 +144,7 @@ def current_user():
                 "error": "Profile not found"
             }), 404
 
-        if profile.get("role") in ("student", "faculty"):
-            profile["institution_name"] = None
-
-            institution_id = profile.get("institution_id")
-
-            if institution_id is not None:
-                from services.supabase_client import get_supabase
-
-                result = (
-                    get_supabase()
-                    .table("institutions")
-                    .select("name")
-                    .eq("id", institution_id)
-                    .limit(1)
-                    .execute()
-                )
-
-                if result.data:
-                    profile["institution_name"] = result.data[0]["name"]
+        profile = serialize_profile(profile)
 
         return jsonify({
             "user": profile
@@ -230,7 +207,7 @@ def update_current_user():
 
         return jsonify({
             "message": "Profile updated successfully",
-            "user": result.data[0]
+            "user": serialize_profile(result.data[0])
         }), 200
 
     except Exception:
@@ -329,7 +306,7 @@ def sync_admin_email():
 
         return jsonify({
             "message": "Official email synchronized successfully",
-            "user": result.data[0]
+            "user": serialize_profile(result.data[0])
         }), 200
 
     except Exception:
@@ -427,7 +404,7 @@ def sync_faculty_email():
 
         return jsonify({
             "message": "Faculty email synchronized successfully",
-            "user": result.data[0]
+            "user": serialize_profile(result.data[0])
         }), 200
 
     except Exception:

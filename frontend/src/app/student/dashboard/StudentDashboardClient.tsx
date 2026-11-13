@@ -224,13 +224,13 @@ export default function StudentDashboardPage() {
 
       <StudentSidebar />
 
-      <main className="min-h-dvh px-4 pb-12 pt-24 sm:px-6 md:ml-64 md:px-8 md:pt-10 xl:px-10">
+      <main className="min-h-dvh min-w-0 px-3 pb-8 pt-20 sm:px-6 sm:pb-12 sm:pt-24 md:ml-64 md:px-8 md:pt-10 xl:px-10">
 
-        <div className="mx-auto max-w-7xl space-y-7">
+        <div className="mx-auto min-w-0 max-w-7xl space-y-5 sm:space-y-7">
 
           {/* Page Header */}
 
-          <header className="flex items-center justify-between gap-4">
+          <header className="flex flex-wrap items-center justify-between gap-3 sm:gap-4">
 
             <div>
               <p className="text-xs font-semibold uppercase tracking-wider text-blue-600 dark:text-blue-400">
@@ -246,13 +246,13 @@ export default function StudentDashboardPage() {
               </p>
             </div>
 
-            <div className="flex shrink-0 items-center gap-3">
+            <div className="flex shrink-0 items-center gap-2 sm:gap-3">
               <ThemeToggle />
               <Link
               href="/student/profile"
               aria-label="Open My Profile"
               title="My Profile"
-              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-blue-200 bg-blue-100 text-lg font-bold text-blue-700 transition-colors hover:bg-blue-200 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-300"
+              className="flex h-10 w-10 shrink-0 items-center justify-center sm:h-12 sm:w-12 rounded-full border border-blue-200 bg-blue-100 text-lg font-bold text-blue-700 transition-colors hover:bg-blue-200 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-300"
             >
               {initial}
             </Link>
@@ -262,7 +262,7 @@ export default function StudentDashboardPage() {
 
           {/* Welcome Banner */}
 
-          <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#102A78] via-[#1746B8] to-[#2563EB] p-6 text-white shadow-sm sm:p-9">
+          <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#102A78] via-[#1746B8] to-[#2563EB] p-4 text-white shadow-sm sm:p-9">
 
             <div className="pointer-events-none absolute -right-16 -top-24 h-72 w-72 rounded-full border border-white/15" />
 
@@ -276,13 +276,13 @@ export default function StudentDashboardPage() {
                   {today}
                 </p>
 
-                <h2 className="mt-4 text-2xl font-bold leading-tight sm:text-4xl">
+                <h2 className="mt-3 break-words text-xl font-bold leading-tight sm:mt-4 sm:text-4xl">
                   {name
                     ? `Welcome, ${name}!`
                     : "Welcome to PolyMate!"}
                 </h2>
 
-                <p className="mt-4 max-w-xl text-sm leading-7 text-blue-100 sm:text-base">
+                <p className="mt-3 max-w-xl text-sm leading-6 text-blue-100 sm:mt-4 sm:text-base sm:leading-7">
                   Your learning journey starts here.
                   Explore courses, study materials and
                   question papers.
@@ -321,7 +321,7 @@ export default function StudentDashboardPage() {
               Quick Access
             </h2>
 
-            <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            <div className="mt-4 grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-3">
 
               {quickAccess.map(
                 ({ title, description, href, Icon }) => (
@@ -329,7 +329,7 @@ export default function StudentDashboardPage() {
                   <Link
                     key={title}
                     href={href}
-                    className="group flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-colors hover:border-blue-400 dark:border-[#30415D] dark:bg-[#0F1D38] dark:hover:border-blue-500"
+                    className="group flex min-w-0 items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition-colors sm:p-5 hover:border-blue-400 dark:border-[#30415D] dark:bg-[#0F1D38] dark:hover:border-blue-500"
                   >
 
                     <span className="shrink-0 rounded-xl bg-blue-50 p-3 text-blue-600 dark:bg-[#172B4C] dark:text-blue-400">
@@ -363,9 +363,9 @@ export default function StudentDashboardPage() {
 
           {/* Recently Added Materials */}
 
-          <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm dark:border-[#30415D] dark:bg-[#0F1D38] sm:p-6">
+          <section className="min-w-0 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm dark:border-[#30415D] dark:bg-[#0F1D38] sm:p-6">
 
-            <div className="flex items-center justify-between gap-3">
+            <div className="flex flex-wrap items-center justify-between gap-3">
 
               <div>
                 <h2 className="text-lg font-bold">
@@ -457,7 +457,7 @@ export default function StudentDashboardPage() {
 
                   <div
                     key={material.id}
-                    className="flex items-center gap-3 py-4 sm:gap-4"
+                    className="flex flex-wrap items-center gap-3 py-4 sm:flex-nowrap sm:gap-4"
                   >
 
                     <div className="shrink-0 rounded-xl bg-red-50 p-3 text-red-500 dark:bg-red-950/40 dark:text-red-400">
@@ -490,7 +490,7 @@ export default function StudentDashboardPage() {
                       onClick={() =>
                         void openPreview(material)
                       }
-                      className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-100 disabled:opacity-50 dark:bg-blue-950 dark:text-blue-300"
+                      className="inline-flex min-h-11 w-full shrink-0 items-center justify-center gap-2 rounded-lg bg-blue-50 px-3 py-2 sm:w-auto text-sm font-semibold text-blue-700 hover:bg-blue-100 disabled:opacity-50 dark:bg-blue-950 dark:text-blue-300"
                     >
 
                       {previewLoading === material.id
@@ -536,7 +536,7 @@ export default function StudentDashboardPage() {
       {preview && (
 
         <div
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/70 p-2 sm:p-6"
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/70 p-0 sm:p-6"
           role="dialog"
           aria-modal="true"
           aria-label="PDF preview"
@@ -544,7 +544,7 @@ export default function StudentDashboardPage() {
         >
 
           <div
-            className="flex h-[92dvh] w-full max-w-6xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-[#0F1D38]"
+            className="flex h-dvh min-w-0 w-full max-w-6xl flex-col overflow-hidden rounded-none sm:h-[92dvh] sm:rounded-2xl bg-white shadow-2xl dark:bg-[#0F1D38]"
             onClick={(event) =>
               event.stopPropagation()
             }

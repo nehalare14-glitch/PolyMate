@@ -86,9 +86,14 @@ export async function completeRegistration(): Promise<ProfileResponse> {
       throw new Error("Faculty branch is required.");
     }
 
+    if (!intent.institutionCode?.trim()) {
+      throw new Error("Please select your institution to complete faculty registration.");
+    }
+
     response = await submitFacultyApplication(
       intent.fullName,
-      intent.facultyBranch
+      intent.facultyBranch,
+      intent.institutionCode
     ) as ProfileResponse;
 
   } else if (intent.type === "student") {

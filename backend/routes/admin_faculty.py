@@ -1,4 +1,4 @@
-﻿from collections import Counter
+from collections import Counter
 from datetime import datetime, timezone
 
 from flask import Blueprint, jsonify, request, g, current_app
@@ -7,7 +7,11 @@ from firebase_admin.auth import UidIdentifier
 
 from routes.admin_materials import admin_only
 from services.supabase_client import get_supabase
-from services.profiles import get_profile
+from services.profiles import (
+    get_profile,
+    serialize_profile,
+    profile_integrity_issues,
+)
 
 
 admin_faculty_bp = Blueprint("admin_faculty", __name__)
@@ -176,6 +180,8 @@ def list_faculty():
             "email": user.email if user else profile.get("email"),
             "institution_id": profile.get("institution_id"),
             "institution_name": institution.get("name"),
+            "college_code": institution.get("college_code"),
+            "institution": institution or None,
             "district": institution.get("district"),
             "branch": profile.get("faculty_branch"),
             "material_branches": sorted(
@@ -235,7 +241,7 @@ def view_faculty(uid):
     )
 
     return jsonify({
-        "profile": profile,
+        "profile": serialize_profile(profile),
         "status": account_status(profile, user),
         "email_verified": user.email_verified if user else None,
         "materials": [
@@ -280,6 +286,15 @@ def manage_faculty(uid, action):
         return bool(result.data)
 
     if action == "approve":
+
+        complete_profile = serialize_profile(profile)
+        issues = profile_integrity_issues(complete_profile)
+
+        if issues:
+            return jsonify({
+                "error": "Faculty profile is incomplete",
+                "missing_fields": issues
+            }), 409
 
         if approval != "pending":
             return jsonify({"error": "Application is not pending"}), 409
@@ -478,4 +493,3 @@ def bulk_remove_faculty():
         "failed": sum(not r["success"] for r in results),
         "results": results
     })
-

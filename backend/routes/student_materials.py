@@ -27,6 +27,13 @@ ALLOWED_TYPES = {
 def list_materials():
     branch = request.args.get("branch", "").strip()
     semester = request.args.get("semester", "").strip()
+    subject = request.args.get("subject", "").strip()
+    search = request.args.get("search", "").strip()
+
+    if len(search) > 120 or len(subject) > 200:
+        return jsonify({
+            "error": "Search or subject filter is too long"
+        }), 400
     material_type = request.args.get(
         "material_type", ""
     ).strip()
@@ -75,6 +82,27 @@ def list_materials():
         if material_type:
             query = query.eq(
                 "material_type", material_type
+            )
+
+        if subject:
+            query = query.eq("subject_name", subject)
+
+        if search:
+            # Escape LIKE wildcards and PostgREST quoted values.
+            escaped = (
+                search.replace("\\", "\\\\")
+                .replace("%", "\\%")
+                .replace("_", "\\_")
+                .replace("*", "\\*")
+            )
+            pattern = f"%{escaped}%"
+            quoted = (
+                pattern.replace("\\", "\\\\")
+                .replace('"', '\\"')
+            )
+            query = query.or_(
+                f'title.ilike."{quoted}",'
+                f'subject_name.ilike."{quoted}"'
             )
 
         start = (page - 1) * limit
@@ -164,4 +192,78 @@ def preview_material(material_id):
     except Exception:
         return jsonify({
             "error": "Unable to open PDF preview"
+        }), 503
+
+
+@student_materials_bp.get("/api/student/materials/subjects")
+@require_role("student")
+def material_subjects():
+    branch = request.args.get("branch", "").strip()
+    semester = request.args.get("semester", "").strip()
+    material_type = request.args.get("material_type", "").strip()
+
+    if material_type and material_type not in ALLOWED_TYPES:
+        return jsonify({"error": "Invalid material type"}), 400
+
+    if semester:
+        try:
+            semester = int(semester)
+            if semester not in range(1, 7):
+                raise ValueError()
+        except ValueError:
+            return jsonify({"error": "Invalid semester"}), 400
+
+    try:
+        db = get_supabase()
+        subjects = set()
+        offset = 0
+        batch_size = 500
+
+        while True:
+            query = (
+                db.table("study_materials")
+                .select("subject_name")
+                .eq("status", "published")
+            )
+
+            if branch:
+                query = query.eq("branch", branch)
+
+            if semester:
+                query = query.eq("semester", semester)
+
+            if material_type:
+                query = query.eq("material_type", material_type)
+
+            result = (
+                query
+                .order("subject_name")
+                .order("id")
+                .range(offset, offset + batch_size - 1)
+                .execute()
+            )
+
+            rows = result.data or []
+
+            for row in rows:
+                name = row.get("subject_name")
+                if name:
+                    subjects.add(name)
+
+            if len(rows) < batch_size:
+                break
+
+            offset += batch_size
+
+        response = jsonify({
+            "subjects": sorted(subjects, key=str.casefold)
+        })
+
+        response.headers["Cache-Control"] = "no-store"
+
+        return response
+
+    except Exception:
+        return jsonify({
+            "error": "Unable to load subject options"
         }), 503
