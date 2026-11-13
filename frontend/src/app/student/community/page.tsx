@@ -7,6 +7,7 @@ import { getAuth } from "firebase/auth";
 
 import "@/lib/firebase";
 import StudentSidebar from "@/components/student/StudentSidebar";
+import CommunityConversation from "@/components/student/CommunityConversation";
 
 import {
   BookOpen,
@@ -899,6 +900,12 @@ export default function StudentCommunityPage() {
                     </button>
 
                   )}
+
+                  <CommunityConversation
+                    key={selected.id}
+                    requestId={selected.id}
+                    api={communityApi}
+                  />
 
                   <div className="space-y-3 border-t border-slate-200 pt-4 dark:border-[#30415D]">
 

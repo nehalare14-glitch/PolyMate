@@ -11,6 +11,7 @@ import {
   GraduationCap,
   Building2,
   FileText,
+  MessageSquare,
   Settings,
   LogOut,
   Menu,
@@ -54,6 +55,12 @@ const navigation = [
     name: "Study Materials",
     href: "/admin/materials",
     icon: FileText,
+    available: true,
+  },
+  {
+    name: "Community Management",
+    href: "/admin/community",
+    icon: MessageSquare,
     available: true,
   },
   {

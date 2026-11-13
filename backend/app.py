@@ -129,6 +129,9 @@ app.register_blueprint(student_community_bp)
 from routes.admin_community import admin_community_bp
 app.register_blueprint(admin_community_bp)
 
+from routes.community_messages import community_messages_bp
+app.register_blueprint(community_messages_bp)
+
 from middleware.security import init_security
 
 init_security(app)
