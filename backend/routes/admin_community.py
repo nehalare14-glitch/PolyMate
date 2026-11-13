@@ -111,6 +111,17 @@ def summary():
 
     counts["total"] = sum(counts.values())
 
+    escalated = (
+        db.table("community_requests")
+        .select("id", count="exact")
+        .in_("status", ["pending", "in_progress"])
+        .not_.is_("escalated_at", "null")
+        .limit(1)
+        .execute()
+    )
+
+    counts["escalated"] = escalated.count or 0
+
     return jsonify(counts)
 
 
@@ -129,6 +140,12 @@ def list_requests():
 
     category = request.args.get("category")
     status = request.args.get("status")
+    escalated = request.args.get("escalated")
+
+    if escalated not in (None, "true", "false"):
+        return jsonify({
+            "error": "Invalid escalated filter"
+        }), 400
 
     query = (
         get_supabase()
@@ -153,6 +170,16 @@ def list_requests():
             }), 400
 
         query = query.eq("status", status)
+
+    if escalated == "true":
+
+        query = (
+            query
+            .in_("status", ["pending", "in_progress"])
+            .not_.is_("escalated_at", "null")
+        )
+
+        query = query.order("escalated_at", desc=False)
 
     result = (
         query

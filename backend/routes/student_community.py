@@ -32,7 +32,7 @@ REQUEST_FIELDS = (
     "branch,semester,subject_name,material_type,"
     "status,material_id,admin_response,"
     "created_at,updated_at,accepted_at,"
-    "completed_at,cancelled_at"
+    "completed_at,cancelled_at,escalated_at"
 )
 
 

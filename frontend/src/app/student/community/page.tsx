@@ -12,6 +12,7 @@ import CommunityConversation from "@/components/student/CommunityConversation";
 
 import {
   BookOpen,
+  AlertTriangle,
   MessageSquare,
   Flag,
   Headphones,
@@ -37,6 +38,7 @@ type Ticket = {
   material_type: string | null;
   material_id: string | null;
   admin_response: string | null;
+  escalated_at?: string | null;
   created_at: string;
 };
 
@@ -162,6 +164,25 @@ function dateLabel(value: string) {
     dateStyle: "medium",
     timeStyle: "short",
   });
+}
+
+
+function isEscalated(ticket: Ticket) {
+  return Boolean(
+    ticket.escalated_at &&
+    ["pending", "in_progress"].includes(ticket.status)
+  );
+}
+
+function EscalationBadge({ ticket }: { ticket: Ticket }) {
+  if (!isEscalated(ticket)) return null;
+
+  return (
+    <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-800 dark:bg-amber-950 dark:text-amber-300">
+      <AlertTriangle size={13} />
+      Escalated
+    </span>
+  );
 }
 
 export default function StudentCommunityPage() {
@@ -506,7 +527,15 @@ export default function StudentCommunityPage() {
 
             <button
               type="button"
-              onClick={() => void loadData()}
+              onClick={() => {
+                void (async () => {
+                  await loadData();
+
+                  if (selected) {
+                    await openRequest(selected.id);
+                  }
+                })();
+              }}
               disabled={loading || busy}
               className="inline-flex items-center gap-2 rounded-xl border border-slate-300 px-4 py-3 text-sm font-medium dark:border-[#30415D]"
             >
@@ -850,11 +879,35 @@ export default function StudentCommunityPage() {
                       {statusLabels[selected.status] || selected.status}
                     </span>
 
+                    <EscalationBadge ticket={selected} />
+
                   </div>
 
                   <p className="text-xs text-slate-500">
                     {selected.ticket_number} · {dateLabel(selected.created_at)}
                   </p>
+
+                  {isEscalated(selected) && (
+                    <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900 dark:bg-amber-950/40">
+
+                      <div className="flex items-center gap-2 font-semibold text-amber-800 dark:text-amber-300">
+                        <AlertTriangle size={19} />
+                        Priority Review
+                      </div>
+
+                      <p className="mt-2 text-sm leading-6 text-amber-800 dark:text-amber-300">
+                        Your request has remained unresolved for at least 48 hours
+                        and has been escalated for priority review by the PolyMate team.
+                      </p>
+
+                      {selected.escalated_at && (
+                        <p className="mt-2 text-xs text-amber-700 dark:text-amber-400">
+                          Escalated on: {dateLabel(selected.escalated_at)}
+                        </p>
+                      )}
+
+                    </div>
+                  )}
 
                   <p className="whitespace-pre-wrap break-words text-sm leading-7">
                     {selected.description}
@@ -989,6 +1042,8 @@ export default function StudentCommunityPage() {
                         <span className={`rounded-full px-3 py-1 text-xs font-semibold ${statusStyles[item.status] || ""}`}>
                           {statusLabels[item.status] || item.status}
                         </span>
+
+                        <EscalationBadge ticket={item} />
 
                       </div>
 

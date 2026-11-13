@@ -9,6 +9,7 @@ import "@/lib/firebase";
 
 import {
   ArrowLeft,
+  AlertTriangle,
   ClipboardList,
   Bell,
   Clock,
@@ -33,6 +34,7 @@ type Ticket = {
   material_type: string | null;
   material_id: string | null;
   admin_response: string | null;
+  escalated_at?: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -55,6 +57,7 @@ type Summary = {
   in_progress: number;
   completed: number;
   cancelled: number;
+  escalated: number;
 };
 
 type Student = {
@@ -187,6 +190,25 @@ function Status({ status }: { status: string }) {
   );
 }
 
+
+function isEscalated(ticket: Ticket) {
+  return Boolean(
+    ticket.escalated_at &&
+    ["pending", "in_progress"].includes(ticket.status)
+  );
+}
+
+function EscalationBadge({ ticket }: { ticket: Ticket }) {
+  if (!isEscalated(ticket)) return null;
+
+  return (
+    <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-800 dark:bg-amber-950 dark:text-amber-300">
+      <AlertTriangle size={13} />
+      Escalated
+    </span>
+  );
+}
+
 export default function AdminCommunityPage() {
 
   const [summary, setSummary] = useState<Summary>({
@@ -195,6 +217,7 @@ export default function AdminCommunityPage() {
     in_progress: 0,
     completed: 0,
     cancelled: 0,
+    escalated: 0,
   });
 
   const [unreadSummary, setUnreadSummary] =
@@ -211,6 +234,9 @@ export default function AdminCommunityPage() {
 
   const [category, setCategory] = useState("all");
   const [status, setStatus] = useState("all");
+
+  const [escalatedOnly, setEscalatedOnly] =
+    useState(false);
 
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
@@ -294,6 +320,10 @@ export default function AdminCommunityPage() {
         params.set("status", status);
       }
 
+      if (escalatedOnly) {
+        params.set("escalated", "true");
+      }
+
       const [stats, result] = await Promise.all([
         adminApi<Summary>("/summary"),
         adminApi<{
@@ -322,7 +352,7 @@ export default function AdminCommunityPage() {
 
     }
 
-  }, [category, status, page, loadUnread]);
+  }, [category, status, page, loadUnread, escalatedOnly]);
 
   useEffect(() => {
 
@@ -853,6 +883,51 @@ export default function AdminCommunityPage() {
 
         </section>
 
+        <section className={`${card} flex flex-wrap items-center justify-between gap-4`}>
+
+          <div className="flex items-center gap-3">
+
+            <span className="rounded-xl bg-amber-100 p-3 text-amber-700 dark:bg-amber-950 dark:text-amber-300">
+              <AlertTriangle size={24} />
+            </span>
+
+            <div>
+              <p className="font-bold">
+                Escalated Requests
+              </p>
+
+              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                Open requests unresolved for 48 hours or more.
+              </p>
+            </div>
+
+          </div>
+
+          <div className="flex items-center gap-4">
+
+            <p className="text-3xl font-bold text-amber-600 dark:text-amber-400">
+              {summary.escalated ?? 0}
+            </p>
+
+            <button
+              type="button"
+              disabled={busy || loading}
+              onClick={() => {
+                setEscalatedOnly(true);
+                setCategory("all");
+                setStatus("all");
+                setPage(1);
+                setSelected(null);
+              }}
+              className={secondary}
+            >
+              View Escalated
+            </button>
+
+          </div>
+
+        </section>
+
         {error && (
 
           <p
@@ -882,6 +957,30 @@ export default function AdminCommunityPage() {
             <h2 className="text-lg font-bold">
               Student Requests
             </h2>
+
+            <label className="block text-sm font-medium">
+              Priority
+
+              <select
+                value={escalatedOnly ? "escalated" : "all"}
+                disabled={busy || loading}
+                onChange={(event) => {
+                  const only = event.target.value === "escalated";
+                  setEscalatedOnly(only);
+                  setPage(1);
+                  setSelected(null);
+
+                  if (only) {
+                    setStatus("all");
+                  }
+                }}
+                className={`${field} mt-2`}
+              >
+                <option value="all">All requests</option>
+                <option value="escalated">Escalated only</option>
+              </select>
+
+            </label>
 
             <label className="block text-sm font-medium">
               Category
@@ -919,8 +1018,12 @@ export default function AdminCommunityPage() {
                 <option value="all">All statuses</option>
                 <option value="pending">Pending</option>
                 <option value="in_progress">In Progress</option>
-                <option value="completed">Completed</option>
-                <option value="cancelled">Cancelled</option>
+                {!escalatedOnly && (
+                  <>
+                    <option value="completed">Completed</option>
+                    <option value="cancelled">Cancelled</option>
+                  </>
+                )}
               </select>
 
             </label>
@@ -934,7 +1037,9 @@ export default function AdminCommunityPage() {
             ) : tickets.length === 0 ? (
 
               <p className="py-5 text-center text-sm text-slate-500">
-                No requests found.
+                {escalatedOnly
+                  ? "No escalated requests found."
+                  : "No requests found."}
               </p>
 
             ) : tickets.map((item) => (
@@ -957,7 +1062,10 @@ export default function AdminCommunityPage() {
                     {item.ticket_number}
                   </span>
 
-                  <Status status={item.status} />
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Status status={item.status} />
+                    <EscalationBadge ticket={item} />
+                  </div>
 
                 </div>
 
@@ -1065,7 +1173,10 @@ export default function AdminCommunityPage() {
                     {ticket.title}
                   </h2>
 
-                  <Status status={ticket.status} />
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Status status={ticket.status} />
+                    <EscalationBadge ticket={ticket} />
+                  </div>
 
                 </div>
 
@@ -1076,6 +1187,28 @@ export default function AdminCommunityPage() {
                   {" · "}
                   {dateLabel(ticket.created_at)}
                 </p>
+
+                {isEscalated(ticket) && (
+                  <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900 dark:bg-amber-950/40">
+
+                    <div className="flex items-center gap-2 font-semibold text-amber-800 dark:text-amber-300">
+                      <AlertTriangle size={19} />
+                      Priority Review Required
+                    </div>
+
+                    <p className="mt-2 text-sm text-amber-800 dark:text-amber-300">
+                      This request has remained unresolved for at least 48 hours.
+                      Please prioritize reviewing and resolving it.
+                    </p>
+
+                    {ticket.escalated_at && (
+                      <p className="mt-2 text-xs text-amber-700 dark:text-amber-400">
+                        Escalated on: {dateLabel(ticket.escalated_at)}
+                      </p>
+                    )}
+
+                  </div>
+                )}
 
                 <div className="rounded-xl bg-slate-50 p-4 text-sm dark:bg-[#0F1D38]">
 
