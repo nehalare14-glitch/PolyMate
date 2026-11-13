@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 
 import { auth } from "@/lib/firebase";
+import { subscribeSmartSync } from "@/lib/smart-sync";
 
 const API =
   process.env.NEXT_PUBLIC_API_URL ??
@@ -108,8 +109,9 @@ export default function AdminOverview({
   useEffect(() => {
     let active = true;
 
-    const unsubscribe = auth.onAuthStateChanged(
-      async user => {
+    const unsubscribe = subscribeSmartSync(
+      auth,
+      async (user, initial) => {
 
         if (!user) {
           if (active) setLoading(false);
@@ -117,7 +119,7 @@ export default function AdminOverview({
         }
 
         if (active) {
-          setLoading(true);
+          if (initial) setLoading(true);
           setError("");
           setHealthError("");
         }
@@ -177,7 +179,8 @@ export default function AdminOverview({
         } finally {
           if (active) setLoading(false);
         }
-      }
+      },
+      { intervalMs: 30000 }
     );
 
     return () => {

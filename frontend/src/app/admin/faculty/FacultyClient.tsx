@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
-import { onAuthStateChanged } from "firebase/auth";
+import { subscribeSmartSync } from "@/lib/smart-sync";
 import {
   GraduationCap, ShieldCheck, Clock, UserX,
   Search, RefreshCw, Eye, Trash2, X,
@@ -206,7 +206,7 @@ export default function FacultyClient() {
 
     let cancelled = false;
 
-    const unsubscribe = onAuthStateChanged(auth, async user => {
+    const unsubscribe = subscribeSmartSync(auth, async (user, initial) => {
 
       if (!user) {
         if (!cancelled) {
@@ -216,7 +216,7 @@ export default function FacultyClient() {
         return;
       }
 
-      setLoading(true);
+      if (initial) setLoading(true);
       setError("");
 
       try {
@@ -229,7 +229,7 @@ export default function FacultyClient() {
       } finally {
         if (!cancelled) setLoading(false);
       }
-    });
+    }, { intervalMs: 30000 });
 
     return () => {
       cancelled = true;

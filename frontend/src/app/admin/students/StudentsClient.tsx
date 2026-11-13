@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { onAuthStateChanged } from "firebase/auth";
+import { subscribeSmartSync } from "@/lib/smart-sync";
 import { auth } from "@/lib/firebase";
 import {
   Users, ShieldCheck, Mail, UserX,
@@ -296,13 +296,15 @@ export default function StudentsClient() {
 
     const controller = new AbortController();
 
-    const unsubscribe = onAuthStateChanged(
+    const unsubscribe = subscribeSmartSync(
       auth,
-      async (user) => {
+      async (user, initial) => {
         if (!active) return;
 
-        setSelectedIds([]);
-        setLoading(true);
+        if (initial) {
+          setSelectedIds([]);
+          setLoading(true);
+        }
         setError("");
 
         if (!user) {
@@ -362,7 +364,8 @@ export default function StudentsClient() {
         } finally {
           if (active) setLoading(false);
         }
-      }
+      },
+      { intervalMs: 30000 }
     );
 
     return () => {
