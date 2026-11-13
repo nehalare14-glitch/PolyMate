@@ -3,7 +3,11 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Pencil, Save, UserRound, X } from "lucide-react";
-import { onAuthStateChanged, sendPasswordResetEmail } from "firebase/auth";
+import { sendPasswordResetEmail } from "firebase/auth";
+import {
+  subscribeSmartSync,
+  notifySmartSync,
+} from "@/lib/smart-sync";
 import { auth } from "@/lib/firebase";
 
 type Profile = {
@@ -29,21 +33,22 @@ export default function FacultyProfilePage() {
 
   useEffect(() => {
     let active = true;
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+    const unsubscribe = subscribeSmartSync(auth, async (user) => {
       if (!active) return;
+
+      if (user && (editing || saving)) return;
+
       setError("");
-      setMessage("");
-      setEditing(false);
-      setProfile(null);
-      setName("");
 
       if (!user) {
+        setProfile(null);
+        setName("");
+        setEditing(false);
         setLoading(false);
         setError("Please sign in to view your profile.");
         return;
       }
 
-      setLoading(true);
       try {
         const token = await user.getIdToken();
         const response = await fetch(`${API}/api/me`, {
@@ -69,7 +74,7 @@ export default function FacultyProfilePage() {
       active = false;
       unsubscribe();
     };
-  }, []);
+  }, [editing, saving]);
 
   async function saveProfile() {
     if (!profile) return;
@@ -110,6 +115,7 @@ export default function FacultyProfilePage() {
       setProfile((previous) => previous ? { ...previous, full_name: trimmedName } : previous);
       setEditing(false);
       setMessage("Profile updated successfully.");
+      notifySmartSync();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to save profile.");
     } finally {

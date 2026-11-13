@@ -3,10 +3,11 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import { sendPasswordResetEmail } from "firebase/auth";
 import {
-  onAuthStateChanged,
-  sendPasswordResetEmail,
-} from "firebase/auth";
+  subscribeSmartSync,
+  notifySmartSync,
+} from "@/lib/smart-sync";
 import {
   CheckCircle2,
   CalendarDays,
@@ -55,7 +56,12 @@ export default function StudentProfilePage() {
 
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+    let active = true;
+
+    const unsubscribe = subscribeSmartSync(auth, async (user) => {
+      if (!active) return;
+
+      if (user && (isEditing || saving)) return;
       if (!user) {
         router.replace("/login");
         return;
@@ -64,6 +70,11 @@ export default function StudentProfilePage() {
       try {
         const response =
           (await getCurrentProfile()) as ProfileResponse;
+
+        if (
+          !active ||
+          auth.currentUser?.uid !== user.uid
+        ) return;
 
         if (response.user.role !== "student") {
           router.replace("/login");
@@ -74,18 +85,25 @@ export default function StudentProfilePage() {
         setEmailVerified(user.emailVerified);
         setName(response.user.full_name ?? "");
       } catch (err) {
-        setError(
-          err instanceof Error
-            ? err.message
-            : "Unable to load your profile."
-        );
+        if (active && auth.currentUser?.uid === user.uid) {
+          setError(
+            err instanceof Error
+              ? err.message
+              : "Unable to load your profile."
+          );
+        }
       } finally {
-        setLoading(false);
+        if (active && auth.currentUser?.uid === user.uid) {
+          setLoading(false);
+        }
       }
     });
 
-    return () => unsubscribe();
-  }, [router]);
+    return () => {
+      active = false;
+      unsubscribe();
+    };
+  }, [router, isEditing, saving]);
 
   function clearFeedback() {
     setMessage("");
@@ -139,6 +157,7 @@ export default function StudentProfilePage() {
       setName(data.user.full_name ?? "");
       setMessage("Your profile has been updated.");
       setIsEditing(false);
+      notifySmartSync();
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Unable to save profile."
@@ -419,6 +438,7 @@ export default function StudentProfilePage() {
           onClick={() => {
             setName(profile.full_name ?? "");
             setIsEditing(false);
+      notifySmartSync();
             clearFeedback();
           }}
           className="rounded-xl border border-slate-300 px-6 py-3 text-sm font-semibold hover:bg-slate-50 disabled:opacity-60 dark:border-slate-700 dark:hover:bg-slate-800"
@@ -485,14 +505,3 @@ export default function StudentProfilePage() {
     </div>
   );
 }
-
-
-
-
-
-
-
-
-
-
-
