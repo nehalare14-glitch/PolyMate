@@ -82,11 +82,45 @@ CORS(app, resources={
 
 @app.get("/api/health")
 def health():
+
+    registered_routes = {
+        rule.rule: rule.methods
+        for rule in app.url_map.iter_rules()
+    }
+
+    unread_summary = (
+        "GET" in registered_routes.get(
+            "/api/admin/community/unread-summary", set()
+        )
+    )
+
+    unread_tickets = (
+        "GET" in registered_routes.get(
+            "/api/admin/community/unread-tickets", set()
+        )
+    )
+
+    mark_read = (
+        "PATCH" in registered_routes.get(
+            "/api/admin/community/requests/<request_id>/read",
+            set()
+        )
+    )
+
     return jsonify({
         "status": "ok",
         "project": "PolyMate",
         "backend": "Python Flask",
-        "firebase": "initialized"
+        "firebase": "initialized",
+        "version": "phase-6-diagnostic-v1",
+        "commit": os.getenv(
+            "RENDER_GIT_COMMIT", "local"
+        ),
+        "features": {
+            "community_unread_summary": unread_summary,
+            "community_unread_tickets": unread_tickets,
+            "community_mark_read": mark_read
+        }
     })
 
 app.register_blueprint(firebase_test_bp)
