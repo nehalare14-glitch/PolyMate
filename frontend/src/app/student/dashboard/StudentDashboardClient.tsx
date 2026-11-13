@@ -21,6 +21,8 @@ import {
 } from "lucide-react";
 
 import StudentSidebar from "@/components/student/StudentSidebar";
+import { auth } from "@/lib/firebase";
+import { subscribeSmartSync } from "@/lib/smart-sync";
 
 import {
   getCurrentProfile,
@@ -124,8 +126,8 @@ export default function StudentDashboardPage() {
   useEffect(() => {
     let active = true;
 
-    async function loadDashboard() {
-      setLoading(true);
+    async function loadDashboard(initial: boolean) {
+      if (initial) setLoading(true);
       setError("");
 
       try {
@@ -159,10 +161,26 @@ export default function StudentDashboardPage() {
       }
     }
 
-    void loadDashboard();
+    const unsubscribe = subscribeSmartSync(
+      auth,
+      async (user, initial) => {
+        if (!user) {
+          if (active) {
+            setProfile(null);
+            setMaterials([]);
+            setLoading(false);
+          }
+          return;
+        }
+
+        await loadDashboard(initial);
+      },
+      { intervalMs: 30000 }
+    );
 
     return () => {
       active = false;
+      unsubscribe();
     };
   }, [refresh]);
 

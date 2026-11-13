@@ -4,7 +4,7 @@ import { fetchSecurePDF, PDF_API_BASE } from "@/lib/secure-pdf";
 
 import PDFViewer from "@/components/shared/PDFViewerDynamic";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import {
   Bookmark,
@@ -21,6 +21,10 @@ import {
 
 import StudentSidebar from "@/components/student/StudentSidebar";
 import { auth } from "@/lib/firebase";
+import {
+  subscribeSmartSync,
+  notifySmartSync,
+} from "@/lib/smart-sync";
 
 import {
   getStudentBookmarks,
@@ -115,6 +119,8 @@ export default function StudentMaterials({
   const [bookmarkBusy, setBookmarkBusy] =
     useState<string | null>(null);
 
+  const bookmarkMutation = useRef(0);
+
   const [bookmarkError, setBookmarkError] =
     useState("");
 
@@ -176,10 +182,17 @@ export default function StudentMaterials({
       }
     }
 
-    void loadSubjects();
+    const unsubscribe = subscribeSmartSync(
+      auth,
+      async (user) => {
+        if (user) await loadSubjects();
+      },
+      { intervalMs: 30000 }
+    );
 
     return () => {
       active = false;
+      unsubscribe();
     };
   }, [materialType, branch, semester, bookmarksOnly, retry]);
 
@@ -197,13 +210,17 @@ export default function StudentMaterials({
   useEffect(() => {
     let active = true;
 
-    async function loadMaterials() {
-      setLoading(true);
+    async function loadMaterials(initial: boolean) {
+      if (initial) {
+        setLoading(true);
+        setMaterials([]);
+      }
+
       setError("");
-      setMaterials([]);
 
       try {
         const found: Material[] = [];
+      const bookmarkVersion = bookmarkMutation.current;
 
         if (bookmarksOnly) {
           let savedPage = 1;
@@ -228,7 +245,11 @@ export default function StudentMaterials({
             savedPage++;
           }
 
-          if (active) {
+          if (
+            active &&
+            bookmarkVersion % 2 === 0 &&
+            bookmarkVersion === bookmarkMutation.current
+          ) {
             setMaterials(found);
           }
 
@@ -285,10 +306,25 @@ export default function StudentMaterials({
       }
     }
 
-    void loadMaterials();
+    const unsubscribe = subscribeSmartSync(
+      auth,
+      async (user, initial) => {
+        if (!user) {
+          if (active) {
+            setMaterials([]);
+            setLoading(false);
+          }
+          return;
+        }
+
+        await loadMaterials(initial);
+      },
+      { intervalMs: 30000 }
+    );
 
     return () => {
       active = false;
+      unsubscribe();
     };
 
   }, [
@@ -309,10 +345,17 @@ export default function StudentMaterials({
 
 
     async function loadBookmarks() {
+      const version = bookmarkMutation.current;
+
+      if (version % 2 !== 0) return;
+
       try {
         const ids = await getStudentBookmarkIds();
 
-        if (active) {
+        if (
+          active &&
+          version === bookmarkMutation.current
+        ) {
           setBookmarkIds(new Set(ids));
           setBookmarksReady(true);
         }
@@ -327,10 +370,25 @@ export default function StudentMaterials({
       }
     }
 
-    void loadBookmarks();
+    const unsubscribe = subscribeSmartSync(
+      auth,
+      async (user) => {
+        if (!user) {
+          if (active) {
+            setBookmarkIds(new Set());
+            setBookmarksReady(false);
+          }
+          return;
+        }
+
+        await loadBookmarks();
+      },
+      { intervalMs: 30000 }
+    );
 
     return () => {
       active = false;
+      unsubscribe();
     };
   }, [bookmarkRetry]);
 
@@ -343,6 +401,7 @@ export default function StudentMaterials({
   async function toggleBookmark(material: Material) {
     if (!bookmarksReady || bookmarkBusy) return;
 
+    bookmarkMutation.current++;
     setBookmarkBusy(material.id);
     setBookmarkError("");
 
@@ -380,7 +439,9 @@ export default function StudentMaterials({
           : "Unable to update bookmark."
       );
     } finally {
+      bookmarkMutation.current++;
       setBookmarkBusy(null);
+      notifySmartSync();
     }
   }
 

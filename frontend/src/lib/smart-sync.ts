@@ -6,6 +6,24 @@ import {
   type User,
 } from "firebase/auth";
 
+const SYNC_EVENT = "polymate:sync";
+const SYNC_STORAGE_KEY = "polymate-sync-event";
+
+export function notifySmartSync() {
+  if (typeof window === "undefined") return;
+
+  window.dispatchEvent(new Event(SYNC_EVENT));
+
+  try {
+    localStorage.setItem(
+      SYNC_STORAGE_KEY,
+      `${Date.now()}-${Math.random()}`
+    );
+  } catch {
+    // Local synchronization remains available.
+  }
+}
+
 export type SmartSyncOptions = {
   intervalMs?: number;
 };
@@ -127,6 +145,23 @@ export function subscribeSmartSync(
     clearTimer();
   }
 
+  function handleSyncEvent() {
+    if (!canRefresh()) return;
+
+    if (running) {
+      queued = true;
+      return;
+    }
+
+    void refresh(true);
+  }
+
+  function handleStorage(event: StorageEvent) {
+    if (event.key === SYNC_STORAGE_KEY) {
+      handleSyncEvent();
+    }
+  }
+
   const unsubscribe = onAuthStateChanged(
     auth,
     (user) => {
@@ -140,6 +175,8 @@ export function subscribeSmartSync(
     }
   );
 
+  window.addEventListener(SYNC_EVENT, handleSyncEvent);
+  window.addEventListener("storage", handleStorage);
   window.addEventListener("focus", handleFocus);
   window.addEventListener("online", handleFocus);
   window.addEventListener("offline", handleOffline);
@@ -154,6 +191,8 @@ export function subscribeSmartSync(
     clearTimer();
     unsubscribe();
 
+    window.removeEventListener(SYNC_EVENT, handleSyncEvent);
+    window.removeEventListener("storage", handleStorage);
     window.removeEventListener("focus", handleFocus);
     window.removeEventListener("online", handleFocus);
     window.removeEventListener("offline", handleOffline);
