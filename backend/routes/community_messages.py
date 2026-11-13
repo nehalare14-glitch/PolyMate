@@ -16,7 +16,7 @@ community_messages_bp = Blueprint(
 
 MESSAGE_FIELDS = (
     "id,request_id,sender_role,"
-    "message,created_at"
+    "message,message_type,created_at"
 )
 
 
@@ -249,6 +249,7 @@ def send_message(request_id, role):
             "request_id": row["request_id"],
             "sender_role": row["sender_role"],
             "message": row["message"],
+            "message_type": row.get("message_type", "reply"),
             "created_at": row["created_at"],
         },
     }), 201

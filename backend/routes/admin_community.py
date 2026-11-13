@@ -417,3 +417,141 @@ def respond(request_id):
         ),
         "request": result.data,
     })
+
+
+# ==========================================
+# SMART NOTIFICATIONS - ADMIN UNREAD SUMMARY
+# ==========================================
+
+@admin_community_bp.get("/unread-summary")
+@admin_only
+def unread_summary():
+
+    result = get_supabase().rpc(
+        "community_admin_unread_summary",
+        {
+            "p_admin_uid": g.firebase_uid,
+        },
+    ).execute()
+
+    return jsonify(
+        result.data or {
+            "new_requests": 0,
+            "unread_messages": 0,
+            "unread_tickets": 0,
+        }
+    )
+
+
+# ==========================================
+# UNREAD COUNTS FOR INDIVIDUAL TICKETS
+# ==========================================
+
+@admin_community_bp.get("/unread-tickets")
+@admin_only
+def unread_tickets():
+
+    raw_ids = request.args.get("ids", "")
+
+    if not raw_ids:
+        return jsonify({"tickets": []})
+
+    parts = raw_ids.split(",")
+
+    if len(parts) > 100:
+        return jsonify({
+            "error": "Too many request IDs"
+        }), 400
+
+    ids = []
+
+    for part in parts:
+
+        request_id = valid_uuid(part.strip())
+
+        if not request_id:
+            return jsonify({
+                "error": "Invalid request ID"
+            }), 400
+
+        ids.append(request_id)
+
+    ids = list(dict.fromkeys(ids))
+
+    result = get_supabase().rpc(
+        "community_admin_ticket_unread",
+        {
+            "p_admin_uid": g.firebase_uid,
+            "p_request_ids": ids,
+        },
+    ).execute()
+
+    return jsonify({
+        "tickets": result.data or [],
+    })
+
+
+# ==========================================
+# MARK A STUDENT CONVERSATION AS READ
+# ==========================================
+
+@admin_community_bp.patch(
+    "/requests/<request_id>/read"
+)
+@admin_only
+def mark_request_read(request_id):
+
+    request_id = valid_uuid(request_id)
+
+    if not request_id:
+        return jsonify({
+            "error": "Invalid request ID"
+        }), 400
+
+    data = request.get_json(silent=True)
+
+    if not isinstance(data, dict):
+        return jsonify({
+            "error": "JSON object required"
+        }), 400
+
+    message_id = data.get("message_id")
+
+    if message_id is not None:
+
+        message_id = valid_uuid(message_id)
+
+        if not message_id:
+            return jsonify({
+                "error": "Invalid message ID"
+            }), 400
+
+    try:
+
+        result = get_supabase().rpc(
+            "community_admin_mark_read",
+            {
+                "p_admin_uid": g.firebase_uid,
+                "p_request_id": request_id,
+                "p_message_id": message_id,
+            },
+        ).execute()
+
+    except Exception as exc:
+
+        if "Request not found" in str(exc):
+            return jsonify({
+                "error": "Request not found"
+            }), 404
+
+        if "Message not found" in str(exc):
+            return jsonify({
+                "error": "Message not found"
+            }), 404
+
+        raise
+
+    return jsonify({
+        "message": "Conversation marked as read",
+        "result": result.data,
+    })

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useSmartRefresh } from "@/hooks/useSmartRefresh";
 import Link from "next/link";
 import { getAuth } from "firebase/auth";
 
@@ -9,6 +10,7 @@ import "@/lib/firebase";
 import {
   ArrowLeft,
   ClipboardList,
+  Bell,
   Clock,
   CheckCircle2,
   RefreshCw,
@@ -33,6 +35,18 @@ type Ticket = {
   admin_response: string | null;
   created_at: string;
   updated_at: string;
+};
+
+type UnreadSummary = {
+  new_requests: number;
+  unread_messages: number;
+  unread_tickets: number;
+};
+
+type TicketUnread = {
+  request_id: string;
+  is_new: boolean;
+  unread_messages: number;
 };
 
 type Summary = {
@@ -68,6 +82,7 @@ type Message = {
   id: string;
   sender_role: "student" | "admin";
   message: string;
+  message_type?: "reply" | "resolution";
   created_at: string;
 };
 
@@ -182,6 +197,16 @@ export default function AdminCommunityPage() {
     cancelled: 0,
   });
 
+  const [unreadSummary, setUnreadSummary] =
+    useState<UnreadSummary>({
+      new_requests: 0,
+      unread_messages: 0,
+      unread_tickets: 0,
+    });
+
+  const [ticketUnread, setTicketUnread] =
+    useState<Record<string, TicketUnread>>({});
+
   const [tickets, setTickets] = useState<Ticket[]>([]);
 
   const [category, setCategory] = useState("all");
@@ -216,6 +241,39 @@ export default function AdminCommunityPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
+  const loadUnread = useCallback(async (
+    items: Ticket[]
+  ) => {
+
+    const ids = items.map((item) => item.id);
+
+    const [stats, details] = await Promise.all([
+      adminApi<UnreadSummary>("/unread-summary"),
+
+      ids.length > 0
+        ? adminApi<{ tickets: TicketUnread[] }>(
+            `/unread-tickets?ids=${encodeURIComponent(
+              ids.join(",")
+            )}`
+          )
+        : Promise.resolve({
+            tickets: [] as TicketUnread[],
+          }),
+    ]);
+
+    setUnreadSummary(stats);
+
+    setTicketUnread(
+      Object.fromEntries(
+        details.tickets.map((item) => [
+          item.request_id,
+          item,
+        ])
+      )
+    );
+
+  }, []);
+
   const loadList = useCallback(async () => {
 
     setLoading(true);
@@ -248,6 +306,8 @@ export default function AdminCommunityPage() {
       setTickets(result.requests || []);
       setTotal(result.total || 0);
 
+      await loadUnread(result.requests || []);
+
     } catch (err) {
 
       setError(
@@ -262,7 +322,7 @@ export default function AdminCommunityPage() {
 
     }
 
-  }, [category, status, page]);
+  }, [category, status, page, loadUnread]);
 
   useEffect(() => {
 
@@ -289,6 +349,24 @@ export default function AdminCommunityPage() {
     setMessages(data.messages || []);
     setMessageTotal(data.total || 0);
     setMessagePage(targetPage);
+
+    if (targetPage === 1) {
+
+      const displayedMessages = data.messages || [];
+
+      const lastMessage =
+        displayedMessages[displayedMessages.length - 1];
+
+      await adminApi(`/requests/${id}/read`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          message_id: lastMessage?.id || null,
+        }),
+      });
+
+      await loadUnread(tickets);
+
+    }
 
   }
 
@@ -506,6 +584,114 @@ export default function AdminCommunityPage() {
 
   }
 
+  // SMART REFRESH 6B
+
+  const activeTicketId = selected?.request.id;
+
+  useSmartRefresh(async () => {
+
+    await loadUnread(tickets);
+
+  }, {
+    enabled: !loading && !busy,
+    intervalMs: 30000,
+  });
+
+  useEffect(() => {
+
+    if (
+      !activeTicketId ||
+      messagePage !== 1 ||
+      busy ||
+      loading
+    ) return;
+
+    let active = true;
+    let running = false;
+
+    async function refreshConversation() {
+
+      if (
+        !active ||
+        running ||
+        document.visibilityState !== "visible" ||
+        !navigator.onLine
+      ) return;
+
+      running = true;
+
+      try {
+
+        const data = await adminApi<{
+          messages: Message[];
+          total: number;
+        }>(
+          `/requests/${activeTicketId}/messages?page=1&limit=50`
+        );
+
+        if (!active) return;
+
+        setMessages(data.messages || []);
+        setMessageTotal(data.total || 0);
+
+      } catch {
+
+        // Keep the existing conversation visible
+        // during temporary network failures.
+
+      } finally {
+
+        running = false;
+
+      }
+
+    }
+
+    const timer = window.setInterval(() => {
+      void refreshConversation();
+    }, 15000);
+
+    function resumeRefresh() {
+      if (document.visibilityState === "visible") {
+        void refreshConversation();
+      }
+    }
+
+    document.addEventListener(
+      "visibilitychange",
+      resumeRefresh
+    );
+
+    window.addEventListener(
+      "online",
+      resumeRefresh
+    );
+
+    return () => {
+
+      active = false;
+
+      window.clearInterval(timer);
+
+      document.removeEventListener(
+        "visibilitychange",
+        resumeRefresh
+      );
+
+      window.removeEventListener(
+        "online",
+        resumeRefresh
+      );
+
+    };
+
+  }, [
+    activeTicketId,
+    messagePage,
+    busy,
+    loading,
+  ]);
+
   const ticket = selected?.request;
 
   const canReply = Boolean(
@@ -526,6 +712,62 @@ export default function AdminCommunityPage() {
           <ArrowLeft size={17} />
           Admin Dashboard
         </Link>
+
+        <section className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-blue-200 bg-blue-50 p-4 dark:border-blue-900 dark:bg-[#172B4C]">
+
+          <div className="flex items-center gap-3">
+
+            <div className="relative rounded-xl bg-blue-100 p-3 text-blue-700 dark:bg-blue-950 dark:text-blue-300">
+
+              <Bell size={22} />
+
+              {unreadSummary.unread_tickets > 0 && (
+
+                <span className="absolute -right-2 -top-2 rounded-full bg-red-600 px-2 py-0.5 text-xs font-bold text-white">
+
+                  {unreadSummary.unread_tickets}
+
+                </span>
+
+              )}
+
+            </div>
+
+            <div>
+
+              <p className="font-semibold">
+                Community Notifications
+              </p>
+
+              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+
+                {unreadSummary.unread_tickets === 0
+                  ? "You are all caught up."
+                  : `${unreadSummary.unread_tickets} tickets require attention.`}
+
+              </p>
+
+            </div>
+
+          </div>
+
+          <div className="flex flex-wrap gap-2 text-xs font-semibold">
+
+            <span className="rounded-full bg-white px-3 py-2 text-blue-700 dark:bg-[#0F1D38] dark:text-blue-300">
+
+              {unreadSummary.new_requests} new requests
+
+            </span>
+
+            <span className="rounded-full bg-white px-3 py-2 text-blue-700 dark:bg-[#0F1D38] dark:text-blue-300">
+
+              {unreadSummary.unread_messages} unread replies
+
+            </span>
+
+          </div>
+
+        </section>
 
         <header className="flex flex-wrap items-center justify-between gap-4">
 
@@ -723,6 +965,37 @@ export default function AdminCommunityPage() {
                   {item.title}
                 </p>
 
+                {(
+                  ticketUnread[item.id]?.is_new ||
+                  (ticketUnread[item.id]?.unread_messages || 0) > 0
+                ) && (
+
+                  <div className="flex flex-wrap gap-2">
+
+                    {ticketUnread[item.id]?.is_new && (
+
+                      <span className="rounded-full bg-blue-100 px-2.5 py-1 text-xs font-semibold text-blue-700 dark:bg-blue-950 dark:text-blue-300">
+
+                        New Request
+
+                      </span>
+
+                    )}
+
+                    {(ticketUnread[item.id]?.unread_messages || 0) > 0 && (
+
+                      <span className="rounded-full bg-red-100 px-2.5 py-1 text-xs font-semibold text-red-700 dark:bg-red-950 dark:text-red-300">
+
+                        {ticketUnread[item.id].unread_messages} unread
+
+                      </span>
+
+                    )}
+
+                  </div>
+
+                )}
+
                 <p className="text-xs text-slate-500 dark:text-slate-400">
                   {categoryLabels[item.category]}
                   {" · "}
@@ -866,12 +1139,19 @@ export default function AdminCommunityPage() {
 
                 )}
 
-                {ticket.admin_response && (
+                {ticket.admin_response &&
+                  !busy &&
+                  messagePage === 1 &&
+                  !messages.some(
+                    (item) =>
+                      item.sender_role === "admin" &&
+                      item.message === ticket.admin_response
+                  ) && (
 
                   <div className="rounded-xl bg-blue-50 p-4 dark:bg-[#172B4C]">
 
                     <p className="font-semibold">
-                      Admin Resolution
+                      Previous Admin Response
                     </p>
 
                     <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-6">
@@ -952,7 +1232,40 @@ export default function AdminCommunityPage() {
 
                   )}
 
+                  {/* UNIFIED RESOLUTION 6C */}
+
                   {messages.map((item) => (
+
+                    item.message_type === "resolution" ? (
+
+                      <div
+                        key={item.id}
+                        className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-900 dark:bg-emerald-950/40"
+                      >
+
+                        <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-300">
+
+                          <CheckCircle2 size={18} />
+
+                          <p className="text-sm font-bold">
+                            Final Resolution
+                          </p>
+
+                        </div>
+
+                        <p className="mt-3 whitespace-pre-wrap break-words text-sm leading-6 text-slate-900 dark:text-slate-100">
+                          {item.message}
+                        </p>
+
+                        <p className="mt-3 text-xs text-emerald-700 dark:text-emerald-300">
+
+                          PolyMate Support · {dateLabel(item.created_at)}
+
+                        </p>
+
+                      </div>
+
+                    ) : (
 
                     <div
                       key={item.id}
@@ -987,7 +1300,7 @@ export default function AdminCommunityPage() {
 
                     </div>
 
-                  ))}
+                  )))}
 
                 </div>
 

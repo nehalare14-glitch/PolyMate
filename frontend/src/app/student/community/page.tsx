@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { useSmartRefresh } from "@/hooks/useSmartRefresh";
 import type { FormEvent } from "react";
 import Link from "next/link";
 import { getAuth } from "firebase/auth";
@@ -210,6 +211,20 @@ export default function StudentCommunityPage() {
 
   const [notificationPage, setNotificationPage] = useState(1);
   const [notificationTotal, setNotificationTotal] = useState(0);
+
+  // SMART REFRESH 6B
+  useSmartRefresh(async () => {
+
+    const data = await communityApi<{
+      unread_count: number;
+    }>("/notifications?page=1&limit=1");
+
+    setUnread(data.unread_count || 0);
+
+  }, {
+    enabled: !loading && !busy,
+    intervalMs: 30000,
+  });
 
   const loadData = useCallback(async () => {
 
@@ -853,21 +868,7 @@ export default function StudentCommunityPage() {
 
                   )}
 
-                  {selected.admin_response && (
-
-                    <div className="rounded-xl bg-blue-50 p-4 dark:bg-[#172B4C]">
-
-                      <p className="text-sm font-semibold text-blue-700 dark:text-blue-300">
-                        PolyMate Team Response
-                      </p>
-
-                      <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-6">
-                        {selected.admin_response}
-                      </p>
-
-                    </div>
-
-                  )}
+                  {/* Responses are shown in the conversation. */}
 
                   {selected.status === "completed" &&
                     selected.material_id && (
@@ -905,6 +906,8 @@ export default function StudentCommunityPage() {
                     key={selected.id}
                     requestId={selected.id}
                     api={communityApi}
+                    legacyResponse={selected.admin_response}
+                    requestStatus={selected.status}
                   />
 
                   <div className="space-y-3 border-t border-slate-200 pt-4 dark:border-[#30415D]">

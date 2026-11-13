@@ -15,6 +15,7 @@ type Message = {
   request_id: string;
   sender_role: "student" | "admin";
   message: string;
+  message_type?: "reply" | "resolution";
   created_at: string;
 };
 
@@ -35,11 +36,15 @@ type ApiClient = <T>(
 type Props = {
   requestId: string;
   api: ApiClient;
+  legacyResponse?: string | null;
+  requestStatus?: string;
 };
 
 export default function CommunityConversation({
   requestId,
   api,
+  legacyResponse,
+  requestStatus,
 }: Props) {
 
   const [messages, setMessages] =
@@ -66,9 +71,24 @@ export default function CommunityConversation({
 
   useEffect(() => {
 
+    // SMART REFRESH 6B
     let active = true;
+    let running = false;
 
-    async function load() {
+    async function load(background = false) {
+
+      if (!active || running) return;
+
+      if (
+        background &&
+        (
+          page !== 1 ||
+          document.visibilityState !== "visible" ||
+          !navigator.onLine
+        )
+      ) return;
+
+      running = true;
 
       try {
 
@@ -85,7 +105,7 @@ export default function CommunityConversation({
 
       } catch (err) {
 
-        if (!active) return;
+        if (!active || background) return;
 
         setError(
           err instanceof Error
@@ -94,6 +114,8 @@ export default function CommunityConversation({
         );
 
       } finally {
+
+        running = false;
 
         if (active) {
           setLoading(false);
@@ -105,8 +127,40 @@ export default function CommunityConversation({
 
     void load();
 
+    const timer = window.setInterval(() => {
+      void load(true);
+    }, 15000);
+
+    function resumeRefresh() {
+      if (document.visibilityState === "visible") {
+        void load(true);
+      }
+    }
+
+    document.addEventListener(
+      "visibilitychange",
+      resumeRefresh
+    );
+
+    window.addEventListener(
+      "online",
+      resumeRefresh
+    );
+
     return () => {
       active = false;
+
+      window.clearInterval(timer);
+
+      document.removeEventListener(
+        "visibilitychange",
+        resumeRefresh
+      );
+
+      window.removeEventListener(
+        "online",
+        resumeRefresh
+      );
     };
 
   }, [api, path, page, refresh]);
@@ -284,6 +338,47 @@ export default function CommunityConversation({
           const isStudent =
             item.sender_role === "student";
 
+          // UNIFIED RESOLUTION 6C
+          if (item.message_type === "resolution") {
+
+            return (
+
+              <div
+                key={item.id}
+                className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-900 dark:bg-emerald-950/40"
+              >
+
+                <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-300">
+
+                  <span aria-hidden="true">✓</span>
+
+                  <p className="text-sm font-bold">
+                    Final Resolution
+                  </p>
+
+                </div>
+
+                <p className="mt-3 whitespace-pre-wrap break-words text-sm leading-6 text-slate-900 dark:text-slate-100">
+                  {item.message}
+                </p>
+
+                <p className="mt-3 text-xs text-emerald-700 dark:text-emerald-300">
+
+                  PolyMate Support · {new Date(
+                    item.created_at
+                  ).toLocaleString("en-IN", {
+                    dateStyle: "medium",
+                    timeStyle: "short",
+                  })}
+
+                </p>
+
+              </div>
+
+            );
+
+          }
+
           return (
 
             <div
@@ -343,6 +438,34 @@ export default function CommunityConversation({
         })}
 
       </div>
+
+      {!loading &&
+        !error &&
+        page === 1 &&
+        legacyResponse &&
+        !messages.some(
+          (item) =>
+            item.sender_role === "admin" &&
+            item.message === legacyResponse
+        ) && (
+
+          <div className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-[#30415D] dark:bg-[#17243B]">
+
+            <p className="text-sm font-semibold text-blue-700 dark:text-blue-300">
+
+              {requestStatus === "completed"
+                ? "Previous Final Resolution"
+                : "Previous Team Response"}
+
+            </p>
+
+            <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-6">
+              {legacyResponse}
+            </p>
+
+          </div>
+
+      )}
 
       {!loading && canReply && (
 
