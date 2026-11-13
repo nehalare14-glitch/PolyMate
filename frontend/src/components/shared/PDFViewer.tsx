@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useRef, useState } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
@@ -25,7 +25,11 @@ type PDFViewerProps = {
   title?: string;
 };
 
-export default function PDFViewer({
+export default function PDFViewer(props: PDFViewerProps) {
+  return <PDFViewerContent key={props.url} {...props} />;
+}
+
+function PDFViewerContent({
   url,
   title = "PDF Document",
 }: PDFViewerProps) {
@@ -37,12 +41,7 @@ export default function PDFViewer({
   const [width, setWidth] = useState(320);
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    setNumPages(0);
-    setPageNumber(1);
-    setZoom(1);
-    setError("");
-  }, [url]);
+
 
   useEffect(() => {
     const element = containerRef.current;
@@ -57,6 +56,15 @@ export default function PDFViewer({
     observer.observe(element);
     return () => observer.disconnect();
   }, []);
+
+
+  useEffect(() => {
+    return () => {
+      if (url.startsWith("blob:")) {
+        URL.revokeObjectURL(url);
+      }
+    };
+  }, [url]);
 
   const buttonClass =
     "flex h-10 w-10 items-center justify-center rounded-lg " +

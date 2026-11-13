@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
@@ -16,11 +16,13 @@ type Subject = {
   semester: number;
 };
 
+const subjects: Subject[] = [];
+
 export default function SubjectsClient() {
   const [search, setSearch] = useState("");
 
   // Subject assignments will come from the protected Flask API.
-  const subjects: Subject[] = [];
+
 
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -33,7 +35,7 @@ export default function SubjectsClient() {
         String(subject.semester),
       ].some((value) => value.toLowerCase().includes(query))
     );
-  }, [search, subjects]);
+  }, [search]);
 
   return (
     <main className="min-h-screen bg-[#F6F8FC] px-4 py-8 text-slate-900 dark:bg-[#0B1220] dark:text-white sm:px-8">
@@ -124,4 +126,3 @@ export default function SubjectsClient() {
     </main>
   );
 }
-

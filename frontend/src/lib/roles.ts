@@ -1,8 +1,7 @@
-﻿export type UserRole =
+export type UserRole =
   | "student"
   | "faculty"
-  | "admin"
-  | "super_admin";
+  | "admin";
 
 export function getDashboardPath(role: UserRole): string {
   switch (role) {
@@ -14,9 +13,6 @@ export function getDashboardPath(role: UserRole): string {
 
     case "admin":
       return "/admin/dashboard";
-
-    case "super_admin":
-      return "/super-admin/dashboard";
 
     default:
       throw new Error("Unknown user role");

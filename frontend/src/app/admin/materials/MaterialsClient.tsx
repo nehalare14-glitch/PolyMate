@@ -1,8 +1,10 @@
-﻿"use client";
+"use client";
+
+import { fetchSecurePDF, PDF_API_BASE } from "@/lib/secure-pdf";
 
 import PDFViewer from "@/components/shared/PDFViewerDynamic";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { signOut } from "firebase/auth";
@@ -126,7 +128,8 @@ export default function MaterialsClient() {
   const [total, setTotal] = useState(0);
   const limit = 20;
 
-  const [loading, setLoading] = useState(true);
+  const [refreshVersion, setRefreshVersion] = useState(0);
+  const [completedRequest, setCompletedRequest] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
@@ -162,73 +165,115 @@ export default function MaterialsClient() {
     });
   }, [router]);
 
-  const load = useCallback(async () => {
-    if (!ready) return;
+  const requestKey = JSON.stringify([
+    tab,
+    page,
+    status,
+    query,
+    branch,
+    semester,
+    type,
+    activityPage,
+    refreshVersion,
+  ]);
 
-    setLoading(true);
+  const loading =
+    !ready || completedRequest !== requestKey;
+
+  function refreshMaterials() {
     setError("");
-
-    try {
-      const params = new URLSearchParams({
-        page: String(page),
-        limit: String(limit),
-        status,
-      });
-
-      if (query) params.set("search", query);
-      if (branch) params.set("branch", branch);
-      if (semester) params.set("semester", semester);
-      if (type) params.set("material_type", type);
-
-      const [list, counts] = await Promise.all([
-        request<{ materials: Material[]; total: number }>(
-          `/api/admin/materials?${params}`
-        ),
-        request<Stats>("/api/admin/materials/stats"),
-      ]);
-
-      setMaterials(list.materials);
-      setTotal(list.total);
-      setStats(counts);
-
-      const lastPage = Math.max(1, Math.ceil(list.total / limit));
-      if (page > lastPage) setPage(lastPage);
-
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Unable to load materials.");
-    } finally {
-      setLoading(false);
-    }
-  }, [ready, page, status, query, branch, semester, type]);
-
-  const loadActivity = useCallback(async () => {
-    if (!ready) return;
-
-    setLoading(true);
-    setError("");
-
-    try {
-      const result = await request<{
-        activities: Activity[];
-        total: number;
-      }>(
-        `/api/admin/materials/activity?page=${activityPage}&limit=20`
-      );
-
-      setActivities(result.activities);
-      setActivityTotal(result.total);
-
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Unable to load activity.");
-    } finally {
-      setLoading(false);
-    }
-  }, [ready, activityPage]);
+    setRefreshVersion(value => value + 1);
+  }
 
   useEffect(() => {
-    if (tab === "materials") void load();
-    else void loadActivity();
-  }, [tab, load, loadActivity]);
+    if (!ready) return;
+
+    let active = true;
+
+    async function fetchData() {
+      try {
+        if (tab === "materials") {
+          const params = new URLSearchParams({
+            page: String(page),
+            limit: String(limit),
+            status,
+          });
+
+          if (query) params.set("search", query);
+          if (branch) params.set("branch", branch);
+          if (semester) params.set("semester", semester);
+          if (type) params.set("material_type", type);
+
+          const [list, counts] = await Promise.all([
+            request<{
+              materials: Material[];
+              total: number;
+            }>(`/api/admin/materials?${params}`),
+
+            request<Stats>("/api/admin/materials/stats"),
+          ]);
+
+          if (!active) return;
+
+          setMaterials(list.materials);
+          setTotal(list.total);
+          setStats(counts);
+
+          const lastPage = Math.max(
+            1,
+            Math.ceil(list.total / limit)
+          );
+
+          if (page > lastPage) {
+            setPage(lastPage);
+          }
+        } else {
+          const result = await request<{
+            activities: Activity[];
+            total: number;
+          }>(
+            `/api/admin/materials/activity?page=${activityPage}&limit=20`
+          );
+
+          if (!active) return;
+
+          setActivities(result.activities);
+          setActivityTotal(result.total);
+        }
+
+        setError("");
+      } catch (err) {
+        if (!active) return;
+
+        setError(
+          err instanceof Error
+            ? err.message
+            : "Unable to load data."
+        );
+      } finally {
+        if (active) {
+          setCompletedRequest(requestKey);
+        }
+      }
+    }
+
+    void fetchData();
+
+    return () => {
+      active = false;
+    };
+  }, [
+    ready,
+    requestKey,
+    tab,
+    page,
+    status,
+    query,
+    branch,
+    semester,
+    type,
+    activityPage,
+  ]);
 
   async function perform(operation: () => Promise<void>) {
     if (busy) return;
@@ -269,16 +314,17 @@ export default function MaterialsClient() {
 
       setEditing(null);
       setMessage(result.message);
-      await load();
+      refreshMaterials();
     });
   }
 
   function openPreview(material: Material) {
     void perform(async () => {
-      const result = await request<{
-        title: string;
-        url: string;
-      }>(`/api/admin/materials/${material.id}/preview`);
+      const result = await fetchSecurePDF(
+        `/api/admin/materials/${encodeURIComponent(material.id)}/preview`,
+        material.title,
+        PDF_API_BASE
+      );
 
       setPreview(result);
     });
@@ -297,7 +343,7 @@ export default function MaterialsClient() {
       );
 
       setMessage(result.message);
-      await load();
+      refreshMaterials();
     });
   }
 
@@ -391,7 +437,7 @@ export default function MaterialsClient() {
               </p>
             </div>
             <button className={btn} disabled={loading || busy}
-              onClick={() => tab === "materials" ? void load() : void loadActivity()}>
+              onClick={refreshMaterials}>
               <RefreshCw size={16} /> Refresh
             </button>
           </div>
@@ -703,6 +749,3 @@ export default function MaterialsClient() {
     </div>
   );
 }
-
-
-

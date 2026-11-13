@@ -1,4 +1,6 @@
-﻿"use client";
+"use client";
+
+import { fetchSecurePDF, PDF_API_BASE } from "@/lib/secure-pdf";
 
 import PDFViewer from "@/components/shared/PDFViewerDynamic";
 
@@ -246,8 +248,6 @@ export default function StudentMaterials({
   useEffect(() => {
     let active = true;
 
-    setBookmarksReady(false);
-    setBookmarkError("");
 
     async function loadBookmarks() {
       try {
@@ -274,6 +274,12 @@ export default function StudentMaterials({
       active = false;
     };
   }, [bookmarkRetry]);
+
+  function retryBookmarks() {
+    setBookmarksReady(false);
+    setBookmarkError("");
+    setBookmarkRetry((previous) => previous + 1);
+  }
 
   async function toggleBookmark(material: Material) {
     if (!bookmarksReady || bookmarkBusy) return;
@@ -375,18 +381,13 @@ export default function StudentMaterials({
     setPreviewError("");
 
     try {
-      const data = await request(
-        `/api/student/materials/${encodeURIComponent(material.id)}/preview`
+      const result = await fetchSecurePDF(
+        `/api/student/materials/${encodeURIComponent(material.id)}/preview`,
+        material.title,
+        PDF_API_BASE
       );
 
-      if (!data.url) {
-        throw new Error("PDF preview unavailable.");
-      }
-
-      setPreview({
-        title: data.title || material.title,
-        url: data.url,
-      });
+      setPreview(result);
 
     } catch (err) {
       setPreviewError(
@@ -853,7 +854,7 @@ export default function StudentMaterials({
                 <button
                   type="button"
                   onClick={() => {
-                    setBookmarkRetry((n) => n + 1);
+                    retryBookmarks();
                     if (bookmarksOnly) {
                       setRetry((n) => n + 1);
                     }
@@ -967,5 +968,3 @@ export default function StudentMaterials({
     </div>
   );
 }
-
-

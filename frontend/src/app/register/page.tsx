@@ -3,7 +3,7 @@
 import InstitutionSelector from "@/components/auth/InstitutionSelector";
 
 import { useState, type FormEvent } from "react";
-import { useEffect } from "react";
+import { useSyncExternalStore } from "react";
 import Link from "next/link";
 import {
   GraduationCap,
@@ -25,22 +25,45 @@ import { submitStudentRegistration } from "@/lib/auth-service";
 
 type AccountType = "student" | "faculty";
 
-export default function RegisterPage() {
-  const [type, setType] = useState<AccountType>("student");
+function subscribeToAccountType(callback: () => void) {
+  window.addEventListener("popstate", callback);
 
-useEffect(() => {
-  const params = new URLSearchParams(window.location.search);
-  if (params.get("type") === "faculty") {
-    setType("faculty");
-  }
-}, []);
+  return () =>
+    window.removeEventListener("popstate", callback);
+}
+
+function getAccountType(): AccountType {
+  const params = new URLSearchParams(
+    window.location.search
+  );
+
+  return params.get("type") === "faculty"
+    ? "faculty"
+    : "student";
+}
+
+function getServerAccountType(): AccountType {
+  return "student";
+}
+
+export default function RegisterPage() {
+  const requestedType = useSyncExternalStore(
+    subscribeToAccountType,
+    getAccountType,
+    getServerAccountType
+  );
+
+  const [selectedType, setType] =
+    useState<AccountType | null>(null);
+
+  const type = selectedType ?? requestedType;
   const [name, setName] = useState("");
   const [institutionCode, setInstitutionCode] = useState("");
   const [facultyBranch, setFacultyBranch] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [institution, setInstitution] = useState("");
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -214,7 +237,7 @@ useEffect(() => {
               </div>
             </div>
 
-            
+
 
             {type === "faculty" && (
               <div>
@@ -318,15 +341,3 @@ useEffect(() => {
     </main>
   );
 }
-
-
-
-
-
-
-
-
-
-
-
-

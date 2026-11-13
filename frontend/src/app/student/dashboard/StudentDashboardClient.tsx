@@ -1,10 +1,12 @@
-﻿"use client";
+"use client";
+
+import { fetchSecurePDF, PDF_API_BASE } from "@/lib/secure-pdf";
 
 import PDFViewer from "@/components/shared/PDFViewerDynamic";
 
 import Link from "next/link";
 import ThemeToggle from "@/components/theme/ThemeToggle";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import {
   ArrowRight,
   BookOpen,
@@ -23,7 +25,6 @@ import StudentSidebar from "@/components/student/StudentSidebar";
 import {
   getCurrentProfile,
   getRecentStudentMaterials,
-  getStudentMaterialPreview,
 } from "@/lib/auth-service";
 
 type StudentProfile = {
@@ -75,6 +76,25 @@ const materialLabels: Record<string, string> = {
   "lab-manual": "Lab Manual",
 };
 
+function subscribeToDate(callback: () => void) {
+  const timer = window.setInterval(callback, 60000);
+  return () => window.clearInterval(timer);
+}
+
+function getTodaySnapshot() {
+  return new Date().toLocaleDateString("en-IN", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    timeZone: "Asia/Kolkata",
+  });
+}
+
+function getServerDateSnapshot() {
+  return "";
+}
+
 export default function StudentDashboardPage() {
   const [profile, setProfile] =
     useState<StudentProfile | null>(null);
@@ -95,19 +115,11 @@ export default function StudentDashboardPage() {
   const [previewError, setPreviewError] =
     useState("");
 
-  const [today, setToday] = useState("");
-
-  useEffect(() => {
-    setToday(
-      new Date().toLocaleDateString("en-IN", {
-        weekday: "long",
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-        timeZone: "Asia/Kolkata",
-      })
-    );
-  }, []);
+  const today = useSyncExternalStore(
+    subscribeToDate,
+    getTodaySnapshot,
+    getServerDateSnapshot
+  );
 
   useEffect(() => {
     let active = true;
@@ -159,19 +171,13 @@ export default function StudentDashboardPage() {
     setPreviewError("");
 
     try {
-      const result =
-        await getStudentMaterialPreview(
-          material.id
-        );
+      const result = await fetchSecurePDF(
+        `/api/student/materials/${encodeURIComponent(material.id)}/preview`,
+        material.title,
+        PDF_API_BASE
+      );
 
-      if (!result.url) {
-        throw new Error("PDF preview unavailable.");
-      }
-
-      setPreview({
-        title: result.title || material.title,
-        url: result.url,
-      });
+      setPreview(result);
 
     } catch (err) {
       setPreviewError(
@@ -584,6 +590,3 @@ export default function StudentDashboardPage() {
     </div>
   );
 }
-
-
-

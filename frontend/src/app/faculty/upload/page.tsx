@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import { auth } from "@/lib/firebase";
 import { onAuthStateChanged } from "firebase/auth";
 
@@ -62,6 +62,33 @@ export default function UploadPage() {
         const registeredBranch = data.user.faculty_branch || "";
 
         setBranch(registeredBranch);
+
+        if (registeredBranch) {
+          const params = new URLSearchParams(
+            window.location.search
+          );
+
+          const requestedSemester =
+            params.get("semester");
+
+          const requestedCode =
+            params.get("subjectCode");
+
+          if (requestedSemester && requestedCode) {
+            const matchedSubject =
+              getBranchSubjects(registeredBranch).find(
+                (item) =>
+                  item.code === requestedCode &&
+                  item.semester === Number(requestedSemester)
+              );
+
+            if (matchedSubject) {
+              setSemester(String(matchedSubject.semester));
+              setSubject(matchedSubject.code);
+              setUploadFromSubject(true);
+            }
+          }
+        }
         setError(
           registeredBranch
             ? ""
@@ -80,27 +107,7 @@ export default function UploadPage() {
   }, []);
 
 
-  useEffect(() => {
-    if (!branch) return;
 
-    const params = new URLSearchParams(window.location.search);
-    const requestedSemester = params.get("semester");
-    const requestedCode = params.get("subjectCode");
-
-    if (!requestedSemester || !requestedCode) return;
-
-    const matchedSubject = getBranchSubjects(branch).find(
-      (item) =>
-        item.code === requestedCode &&
-        item.semester === Number(requestedSemester)
-    );
-
-    if (!matchedSubject) return;
-
-    setSemester(String(matchedSubject.semester));
-    setSubject(matchedSubject.code);
-    setUploadFromSubject(true);
-  }, [branch]);
 
   const availableSubjects = getBranchSubjects(branch).filter(
     (item) => item.semester === Number(semester)
@@ -496,13 +503,3 @@ export default function UploadPage() {
     </>
   );
 }
-
-
-
-
-
-
-
-
-
-

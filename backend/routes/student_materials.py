@@ -1,3 +1,4 @@
+from services.pdf_preview import secure_pdf_response
 from flask import Blueprint, request, jsonify
 from middleware.role_auth import require_role
 from services.supabase_client import get_supabase
@@ -158,33 +159,7 @@ def preview_material(material_id):
 
         material = result.data[0]
 
-        signed = (
-            db.storage
-            .from_(BUCKET)
-            .create_signed_url(
-                material["storage_path"],
-                900
-            )
-        )
-
-        url = (
-            signed.get("signedURL")
-            or signed.get("signedUrl")
-        )
-
-        if not url:
-            raise RuntimeError(
-                "Unable to create preview URL"
-            )
-
-        response = jsonify({
-            "title": material["title"],
-            "url": url
-        })
-
-        response.headers["Cache-Control"] = "no-store"
-
-        return response
+        return secure_pdf_response(db, BUCKET, material)
 
     except Exception:
         return jsonify({

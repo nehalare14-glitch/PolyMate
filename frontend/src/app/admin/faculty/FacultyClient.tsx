@@ -1,6 +1,6 @@
-﻿"use client";
+"use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { onAuthStateChanged } from "firebase/auth";
 import {
@@ -138,6 +138,27 @@ async function api(path: string, options: RequestInit = {}) {
   return data;
 }
 
+function subscribeToFacultyStatus(callback: () => void) {
+  window.addEventListener("popstate", callback);
+
+  return () =>
+    window.removeEventListener("popstate", callback);
+}
+
+function getFacultyStatus() {
+  const query = new URLSearchParams(
+    window.location.search
+  );
+
+  return query.get("status") === "pending"
+    ? "pending"
+    : "all";
+}
+
+function getServerFacultyStatus() {
+  return "all";
+}
+
 export default function FacultyClient() {
 
   const [data, setData] = useState<Data | null>(null);
@@ -147,7 +168,16 @@ export default function FacultyClient() {
   const [refresh, setRefresh] = useState(0);
 
   const [search, setSearch] = useState("");
-  const [status, setStatus] = useState("all");
+  const requestedStatus = useSyncExternalStore(
+    subscribeToFacultyStatus,
+    getFacultyStatus,
+    getServerFacultyStatus
+  );
+
+  const [selectedStatus, setStatus] =
+    useState<string | null>(null);
+
+  const status = selectedStatus ?? requestedStatus;
   const [branch, setBranch] = useState("all");
   const [institution, setInstitution] = useState("all");
 
@@ -208,12 +238,7 @@ export default function FacultyClient() {
 
   }, [refresh]);
 
-  useEffect(() => {
-    const query = new URLSearchParams(window.location.search);
-    if (query.get("status") === "pending") {
-      setStatus("pending");
-    }
-  }, []);
+
 
   const faculty = data?.faculty || [];
 
@@ -958,5 +983,3 @@ export default function FacultyClient() {
     </main>
   );
 }
-
-

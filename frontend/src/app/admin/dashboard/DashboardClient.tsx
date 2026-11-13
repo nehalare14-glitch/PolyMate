@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import ThemeToggle from "@/components/theme/ThemeToggle";
 import AdminOverview from "./AdminOverview";
@@ -7,17 +7,14 @@ import Link from "next/link";
 import {
   Mail,
   LayoutDashboard,
-  ShieldCheck,
   Users,
   GraduationCap,
   Building2,
   FileText,
-  ClipboardCheck,
   Settings,
   LogOut,
   Menu,
   X,
-  ChevronRight,
   Loader2,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -34,7 +31,7 @@ const navigation = [
     icon: LayoutDashboard,
     available: true,
   },
-  
+
   {
     name: "Students",
     href: "/admin/students",
@@ -291,22 +288,3 @@ export default function AdminDashboard() {
     </div>
   );
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

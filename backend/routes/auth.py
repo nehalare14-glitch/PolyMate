@@ -240,9 +240,8 @@ def update_current_user():
 
 
 @auth_bp.post("/api/admin/sync-email")
-@auth_bp.post("/api/super-admin/sync-email")
 @require_firebase_auth
-def sync_super_admin_email():
+def sync_admin_email():
     from services.supabase_client import get_supabase
     from flask import request
     import time
@@ -285,7 +284,7 @@ def sync_super_admin_email():
         if not profile:
             return jsonify({"error": "Profile not found"}), 404
 
-        if profile.get("role") not in ("admin", "super_admin"):
+        if profile.get("role") != "admin":
             return jsonify({"error": "Access denied"}), 403
 
         firebase_user = firebase_auth.get_user(g.firebase_uid)
@@ -433,4 +432,3 @@ def sync_faculty_email():
 
     except Exception:
         return jsonify({"error": "Unable to synchronize faculty email"}), 503
-

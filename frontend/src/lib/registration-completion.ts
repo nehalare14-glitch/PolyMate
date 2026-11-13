@@ -14,7 +14,7 @@ type RegistrationIntent = {
 
 type ProfileResponse = {
   user: {
-    role: "student" | "faculty" | "admin" | "super_admin";
+    role: "student" | "faculty" | "admin";
     full_name?: string | null;
     institution_id?: number | null;
   };

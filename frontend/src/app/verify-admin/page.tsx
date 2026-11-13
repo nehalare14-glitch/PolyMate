@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState } from "react";
 import {
@@ -9,7 +9,7 @@ import {
 import { auth } from "@/lib/firebase";
 
 export default function VerifyAdminPage() {
-  const [email, setEmail] = useState("polymate.official@gmail.com");
+  const email = "polymate.official@gmail.com";
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
 
@@ -45,7 +45,7 @@ export default function VerifyAdminPage() {
     <main style={{ maxWidth: 420, margin: "80px auto", padding: 24 }}>
       <h1>PolyMate Email Verification</h1>
 
-      <p>Verify the official Super Admin email.</p>
+      <p>Verify the official Admin email.</p>
 
       <input
         type="email"

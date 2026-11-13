@@ -1,4 +1,5 @@
-﻿import os
+from services.pdf_preview import secure_pdf_response
+import os
 
 from datetime import datetime, timezone
 from functools import wraps
@@ -262,19 +263,7 @@ def preview_material(material_id):
     if not material:
         return jsonify({"error": "Material not found"}), 404
 
-    signed = db.storage.from_(BUCKET).create_signed_url(
-        material["storage_path"], 900
-    )
-
-    url = signed.get("signedURL") or signed.get("signedUrl")
-
-    if not url:
-        raise RuntimeError("Unable to create preview URL")
-
-    return jsonify({
-        "title": material["title"],
-        "url": url
-    })
+    return secure_pdf_response(db, BUCKET, material)
 
 
 # EDIT MATERIAL DETAILS

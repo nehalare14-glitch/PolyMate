@@ -1,4 +1,4 @@
-﻿from flask import Blueprint, jsonify, g
+from flask import Blueprint, jsonify, g
 
 from middleware.role_auth import require_role
 
@@ -35,10 +35,4 @@ def faculty_dashboard():
 @role_dashboards_bp.get("/api/admin/dashboard")
 @require_role("admin")
 def admin_dashboard():
-    return dashboard_response()
-
-
-@role_dashboards_bp.get("/api/super-admin/dashboard")
-@require_role("super_admin")
-def super_admin_dashboard():
     return dashboard_response()

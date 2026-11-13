@@ -5,7 +5,6 @@ ALLOWED_ROLES = {
     "student",
     "faculty",
     "admin",
-    "super_admin",
 }
 
 
@@ -146,7 +145,3 @@ def create_faculty_application(uid, email, name, faculty_branch):
         )
 
     return profile
-
-
-
-

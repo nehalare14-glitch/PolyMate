@@ -1,6 +1,6 @@
-﻿"use client";
+"use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 
 import {
@@ -119,6 +119,46 @@ async function request(
   return data;
 }
 
+function subscribeToClock(callback: () => void) {
+  const timer = window.setInterval(callback, 1000);
+
+  return () => window.clearInterval(timer);
+}
+
+function getClockSnapshot() {
+  return Math.floor(Date.now() / 1000);
+}
+
+function getServerClockSnapshot() {
+  return 0;
+}
+
+function subscribeToTimeFormat(callback: () => void) {
+  window.addEventListener("storage", callback);
+  window.addEventListener(
+    "polymate-time-format-change",
+    callback
+  );
+
+  return () => {
+    window.removeEventListener("storage", callback);
+    window.removeEventListener(
+      "polymate-time-format-change",
+      callback
+    );
+  };
+}
+
+function getTimeFormat() {
+  return localStorage.getItem(
+    "polymate-time-format"
+  ) === "24" ? "24" : "12";
+}
+
+function getServerTimeFormat() {
+  return "12";
+}
+
 export default function SettingsClient() {
   const router = useRouter();
 
@@ -144,8 +184,21 @@ export default function SettingsClient() {
   const [health, setHealth] =
     useState<Health | null>(null);
 
-  const [now, setNow] = useState<Date | null>(null);
-  const [format, setFormat] = useState("12");
+  const timestamp = useSyncExternalStore(
+    subscribeToClock,
+    getClockSnapshot,
+    getServerClockSnapshot
+  );
+
+  const now = timestamp
+    ? new Date(timestamp * 1000)
+    : null;
+
+  const format = useSyncExternalStore(
+    subscribeToTimeFormat,
+    getTimeFormat,
+    getServerTimeFormat
+  );
 
   useEffect(() => {
     let active = true;
@@ -196,31 +249,16 @@ export default function SettingsClient() {
     };
   }, [router]);
 
-  useEffect(() => {
-    setNow(new Date());
 
-    const saved = localStorage.getItem(
-      "polymate-time-format"
-    );
-
-    if (saved === "12" || saved === "24") {
-      setFormat(saved);
-    }
-
-    const timer = setInterval(
-      () => setNow(new Date()),
-      1000
-    );
-
-    return () => clearInterval(timer);
-  }, []);
 
   function changeFormat(value: string) {
-    setFormat(value);
-
     localStorage.setItem(
       "polymate-time-format",
       value
+    );
+
+    window.dispatchEvent(
+      new Event("polymate-time-format-change")
     );
   }
 
@@ -986,4 +1024,3 @@ export default function SettingsClient() {
     </div>
   );
 }
-

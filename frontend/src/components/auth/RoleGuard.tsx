@@ -17,7 +17,6 @@ const validRoles: UserRole[] = [
   "student",
   "faculty",
   "admin",
-  "super_admin",
 ];
 
 export default function RoleGuard({
@@ -25,6 +24,7 @@ export default function RoleGuard({
   children,
 }: RoleGuardProps) {
   const router = useRouter();
+  const allowedRoleKey = allowedRoles.join("|");
   const [authorized, setAuthorized] = useState(false);
   const [error, setError] = useState("");
 
@@ -67,7 +67,7 @@ export default function RoleGuard({
 
 
 
-        if (!allowedRoles.includes(role)) {
+        if (!allowedRoleKey.split("|").includes(role)) {
           router.replace(getDashboardPath(role));
           return;
         }
@@ -96,7 +96,7 @@ export default function RoleGuard({
       active = false;
       unsubscribe();
     };
-  }, [router, allowedRoles.join("|")]);
+  }, [router, allowedRoleKey]);
 
   if (error) {
     return (
@@ -132,7 +132,3 @@ export default function RoleGuard({
 
   return <>{children}</>;
 }
-
-
-
-

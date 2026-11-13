@@ -123,23 +123,14 @@ app.register_blueprint(admin_faculty_bp)
 
 
 
+from middleware.security import init_security
+
+init_security(app)
+
+
 if __name__ == "__main__":
     app.run(
         host="127.0.0.1",
         port=5000,
         debug=False
     )
-
-
-
-
-
-
-
-
-
-
-
-
-
-

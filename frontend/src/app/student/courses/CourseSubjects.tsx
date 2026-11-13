@@ -1,4 +1,6 @@
-﻿"use client";
+"use client";
+
+import { fetchSecurePDF, PDF_API_BASE } from "@/lib/secure-pdf";
 
 import PDFViewer from "@/components/shared/PDFViewerDynamic";
 
@@ -179,18 +181,13 @@ export default function CourseSubjects({
     setPreviewError("");
 
     try {
-      const data = await request(
-        `/api/student/materials/${material.id}/preview`
+      const result = await fetchSecurePDF(
+        `/api/student/materials/${encodeURIComponent(material.id)}/preview`,
+        material.title,
+        PDF_API_BASE
       );
 
-      if (!data.url) {
-        throw new Error("PDF preview unavailable.");
-      }
-
-      setPreview({
-        title: data.title || material.title,
-        url: data.url,
-      });
+      setPreview(result);
 
     } catch (err) {
       setPreviewError(
@@ -531,4 +528,3 @@ export default function CourseSubjects({
     </section>
   );
 }
-

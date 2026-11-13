@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
@@ -44,9 +44,13 @@ export default function InstitutionsClient() {
 
   const limit = 15;
 
-  async function loadInstitutions() {
+  function refreshInstitutions() {
     setLoading(true);
     setError("");
+    void loadInstitutions();
+  }
+
+  async function loadInstitutions() {
 
     try {
       const response = await fetch(
@@ -179,7 +183,7 @@ export default function InstitutionsClient() {
           <button
             className={btn}
             disabled={loading}
-            onClick={() => void loadInstitutions()}
+            onClick={refreshInstitutions}
           >
             <RefreshCw size={17} />
             Refresh
@@ -441,4 +445,3 @@ export default function InstitutionsClient() {
     </main>
   );
 }
-

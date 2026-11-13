@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -296,14 +296,14 @@ export default function StudentsClient() {
 
     const controller = new AbortController();
 
-    setSelectedIds([]);
-    setLoading(true);
-    setError("");
-
     const unsubscribe = onAuthStateChanged(
       auth,
       async (user) => {
         if (!active) return;
+
+        setSelectedIds([]);
+        setLoading(true);
+        setError("");
 
         if (!user) {
           setError("Please sign in as Admin.");
@@ -954,7 +954,3 @@ export default function StudentsClient() {
     </main>
   );
 }
-
-
-
-

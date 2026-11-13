@@ -1,4 +1,6 @@
-﻿"use client";
+"use client";
+
+import { fetchSecurePDF, PDF_API_BASE } from "@/lib/secure-pdf";
 
 import PDFViewer from "@/components/shared/PDFViewerDynamic";
 
@@ -254,36 +256,13 @@ export default function FacultyDashboardPage() {
     setPreviewLoading(material.id);
 
     try {
-      const user = auth.currentUser;
-
-      if (!user) {
-        throw new Error("Please sign in again.");
-      }
-
-      const token = await user.getIdToken();
-
-      const response = await fetch(
-        `${API}/api/faculty/materials/${material.id}/preview`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          cache: "no-store",
-        }
+      const result = await fetchSecurePDF(
+        `/api/faculty/materials/${encodeURIComponent(material.id)}/preview`,
+        material.title,
+        PDF_API_BASE
       );
 
-      const data = await response.json();
-
-      if (!response.ok || !data.url) {
-        throw new Error(
-          data.error || "Unable to open PDF."
-        );
-      }
-
-      setPreview({
-        title: material.title,
-        url: data.url,
-      });
+      setPreview(result);
     } catch (err) {
       setPreviewError(
         err instanceof Error
@@ -695,4 +674,3 @@ export default function FacultyDashboardPage() {
     </div>
   );
 }
-
