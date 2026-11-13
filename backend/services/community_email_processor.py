@@ -4,6 +4,7 @@ import logging
 from services.supabase_client import get_supabase
 from services.gmail_service import (
     gmail_configured,
+    get_gmail_credentials,
     send_email,
 )
 
@@ -112,19 +113,48 @@ def process_community_emails(batch_size=1):
         "community_email_recover_stale"
     )
 
+    if (
+        not isinstance(recovery, dict)
+        or not recovery.get("success")
+        or not isinstance(
+            recovery.get("recovered"), int
+        )
+        or recovery["recovered"] < 0
+    ):
+        raise RuntimeError(
+            "Unable to confirm stale email recovery"
+        )
+
     summary = {
         "success": True,
         "claimed": 0,
         "sent": 0,
         "failed": 0,
         "retry_pending": 0,
-        "review_required": 0,
-        "recovered": (
-            recovery.get("recovered", 0)
-            if isinstance(recovery, dict)
-            else 0
-        ),
+        "review_required": recovery["recovered"],
+        "recovered": recovery["recovered"],
     }
+
+    try:
+        credentials = get_gmail_credentials()
+
+        if not credentials.valid:
+            raise RuntimeError(
+                "Gmail authorization is invalid"
+            )
+
+    except Exception as exc:
+        logger.warning(
+            "Gmail authorization failed: %s",
+            type(exc).__name__,
+        )
+
+        summary["success"] = False
+        summary["error"] = (
+            "Gmail authorization unavailable"
+        )
+
+        return summary
 
     for _ in range(batch_size):
 
@@ -149,7 +179,8 @@ def process_community_emails(batch_size=1):
             )
 
             summary["failed"] += 1
-            continue
+            summary["success"] = False
+            break
 
         subject, body = official_email_content(email)
 
@@ -158,6 +189,7 @@ def process_community_emails(batch_size=1):
                 recipient,
                 subject,
                 body,
+                credentials=credentials,
             )
 
             if not isinstance(result, dict):
@@ -173,6 +205,8 @@ def process_community_emails(batch_size=1):
                 )
 
         except Exception as exc:
+
+            summary["success"] = False
 
             # The current Gmail service does not reliably
             # distinguish rejected sends from uncertain

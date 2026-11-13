@@ -35,6 +35,26 @@ def gmail_configured():
     )
 
 
+class BoundedGoogleRequest(Request):
+    def __call__(
+        self,
+        url,
+        method="GET",
+        body=None,
+        headers=None,
+        timeout=15,
+        **kwargs,
+    ):
+        return super().__call__(
+            url=url,
+            method=method,
+            body=body,
+            headers=headers,
+            timeout=min(timeout or 15, 15),
+            **kwargs,
+        )
+
+
 def get_gmail_credentials():
     if not gmail_configured():
         raise RuntimeError(
@@ -50,18 +70,29 @@ def get_gmail_credentials():
         scopes=[GMAIL_SCOPE],
     )
 
-    credentials.refresh(Request())
+    credentials.refresh(BoundedGoogleRequest())
 
     return credentials
 
 
-def send_email(recipient, subject, body):
+def send_email(
+    recipient,
+    subject,
+    body,
+    credentials=None,
+):
     if not recipient or not subject or not body:
         raise ValueError(
             "Recipient, subject and body are required"
         )
 
-    credentials = get_gmail_credentials()
+    if credentials is None:
+        credentials = get_gmail_credentials()
+
+    if not credentials.valid:
+        raise RuntimeError(
+            "Gmail authorization is invalid"
+        )
 
     message = EmailMessage()
 
