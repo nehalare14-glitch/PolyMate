@@ -123,6 +123,12 @@ app.register_blueprint(admin_faculty_bp)
 
 
 
+from routes.student_community import student_community_bp
+app.register_blueprint(student_community_bp)
+
+from routes.admin_community import admin_community_bp
+app.register_blueprint(admin_community_bp)
+
 from middleware.security import init_security
 
 init_security(app)

@@ -10,6 +10,7 @@ import {
   GraduationCap,
   LayoutDashboard,
   Layers3,
+  MessagesSquare,
   Menu,
   UserRound,
   X,
@@ -42,6 +43,12 @@ const navigation = [
     label: "Bookmarks",
     href: "/student/bookmarks",
     icon: Bookmark,
+  },
+
+  {
+    label: "Community Hub",
+    href: "/student/community",
+    icon: MessagesSquare,
   },
 
   {
