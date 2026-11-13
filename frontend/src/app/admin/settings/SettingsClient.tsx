@@ -83,7 +83,8 @@ const services = [
 async function request(
   path: string,
   method = "GET",
-  body?: object
+  body?: object,
+  timeoutMs = 30000
 ) {
   const user = auth.currentUser;
 
@@ -101,7 +102,7 @@ async function request(
     },
     body: body ? JSON.stringify(body) : undefined,
     cache: "no-store",
-    signal: AbortSignal.timeout(30000),
+    signal: AbortSignal.timeout(timeoutMs),
   });
 
   const data = await response.json().catch(() => ({}));
@@ -180,6 +181,12 @@ export default function SettingsClient() {
     useState<"logout" | "sessions" | null>(null);
 
   const [password, setPassword] = useState("");
+
+  const [emailConfigured, setEmailConfigured] =
+    useState<boolean | null>(null);
+
+  const [emailTestPassed, setEmailTestPassed] =
+    useState(false);
 
   const [health, setHealth] =
     useState<Health | null>(null);
@@ -394,6 +401,63 @@ export default function SettingsClient() {
       );
 
       setHealth(data);
+    });
+  }
+
+  function checkEmailStatus() {
+    void perform("email-status", async () => {
+      setEmailConfigured(null);
+      setEmailTestPassed(false);
+
+      const data = await request(
+        "/api/admin/email/status",
+        "GET",
+        undefined,
+        120000
+      );
+
+      if (typeof data.configured !== "boolean") {
+        throw new Error("Invalid email configuration response.");
+      }
+
+      setEmailConfigured(data.configured);
+
+      setMessage(
+        data.configured
+          ? "Gmail credentials are configured. Send a test email to verify delivery."
+          : "Gmail configuration is incomplete. Check Render environment variables."
+      );
+    });
+  }
+
+  function sendEmailTest() {
+    if (busy || emailConfigured !== true) return;
+
+    const confirmed = window.confirm(
+      "Send a test email to the configured PolyMate official recipient?"
+    );
+
+    if (!confirmed) return;
+
+    void perform("email-test", async () => {
+      setEmailTestPassed(false);
+
+      const data = await request(
+        "/api/admin/email/test",
+        "POST",
+        undefined,
+        120000
+      );
+
+      if (!data.success) {
+        throw new Error("Gmail did not accept the test email.");
+      }
+
+      setEmailTestPassed(true);
+
+      setMessage(
+        "Gmail accepted the test email. Check your official inbox and spam folder."
+      );
     });
   }
 
@@ -842,6 +906,148 @@ export default function SettingsClient() {
                       : "Check Services"}
                   </button>
 
+                </section>
+
+                <section className={card}>
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-300">
+                      <Mail size={22} />
+                    </div>
+
+                    <div className="min-w-0">
+                      <h2 className="font-semibold">
+                        Email Notification Settings
+                      </h2>
+
+                      <p className={muted}>
+                        Manage official PolyMate emails.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className={`my-5 ${divider}`} />
+
+                  <div className="space-y-4">
+                    <div>
+                      <p className={muted}>
+                        Official Sender (intended)
+                      </p>
+
+                      <p className="mt-1 break-all text-sm font-medium">
+                        polymate.official@gmail.com
+                      </p>
+                    </div>
+
+                    <div className="flex items-center justify-between gap-3">
+                      <span className={muted}>
+                        Email Provider
+                      </span>
+
+                      <span className="text-sm font-medium">
+                        Gmail API
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between gap-3">
+                      <span className={muted}>
+                        Configuration Status
+                      </span>
+
+                      <span className={`text-right text-xs font-semibold ${
+                        emailConfigured === true
+                          ? "text-emerald-600 dark:text-emerald-400"
+                          : emailConfigured === false
+                          ? "text-red-600 dark:text-red-400"
+                          : "text-slate-500 dark:text-slate-400"
+                      }`}>
+                        {busy === "email-status"
+                          ? "Checking..."
+                          : emailConfigured === true
+                          ? "Configured"
+                          : emailConfigured === false
+                          ? "Not Configured"
+                          : "Not Checked"}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between gap-3">
+                      <span className={muted}>
+                        Test Email
+                      </span>
+
+                      <span className={`text-right text-xs font-semibold ${
+                        emailTestPassed
+                          ? "text-emerald-600 dark:text-emerald-400"
+                          : "text-slate-500 dark:text-slate-400"
+                      }`}>
+                        {busy === "email-test"
+                          ? "Sending..."
+                          : emailTestPassed
+                          ? "Accepted by Gmail"
+                          : "Not Tested"}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between gap-3">
+                      <span className={muted}>
+                        Automatic Notifications
+                      </span>
+
+                      <span className="text-right text-xs font-medium text-slate-500 dark:text-slate-400">
+                        Not Active
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className={`my-5 ${divider}`} />
+
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <button
+                      type="button"
+                      disabled={!!busy || emailConfigured !== true}
+                      onClick={sendEmailTest}
+                      className={`${primary} flex min-h-11 items-center justify-center gap-2`}
+                    >
+                      {busy === "email-test" ? (
+                        <LoaderCircle
+                          size={17}
+                          className="animate-spin"
+                        />
+                      ) : (
+                        <Mail size={17} />
+                      )}
+
+                      {busy === "email-test"
+                        ? "Sending..."
+                        : "Send Test Email"}
+                    </button>
+
+                    <button
+                      type="button"
+                      disabled={!!busy}
+                      onClick={checkEmailStatus}
+                      className={`${button} flex min-h-11 items-center justify-center gap-2`}
+                    >
+                      <RefreshCw
+                        size={17}
+                        className={
+                          busy === "email-status"
+                            ? "animate-spin"
+                            : ""
+                        }
+                      />
+
+                      {busy === "email-status"
+                        ? "Checking..."
+                        : "Refresh Status"}
+                    </button>
+                  </div>
+
+                  <p className={`mt-4 ${muted}`}>
+                    Check the configuration before sending a test email.
+                    Test emails are sent to the official recipient
+                    configured on the server.
+                  </p>
                 </section>
 
                 <section className={card}>
