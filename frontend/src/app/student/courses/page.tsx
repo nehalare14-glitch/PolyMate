@@ -79,7 +79,7 @@ export default function StudentCoursesPage() {
 
       <StudentSidebar />
 
-      <main className="min-h-dvh px-4 pb-12 pt-24 sm:px-6 md:ml-64 md:px-8 md:pt-10 xl:px-10">
+      <main className="min-h-dvh min-w-0 px-3 pb-12 pt-20 sm:px-6 md:ml-64 md:px-8 md:pt-10 xl:px-10">
 
         <div className="mx-auto max-w-7xl space-y-7">
 
@@ -307,7 +307,7 @@ export default function StudentCoursesPage() {
                   Choose your semester to continue.
                 </p>
 
-                <div className="mt-5 grid grid-cols-2 gap-4 lg:grid-cols-3">
+                <div className="mt-5 grid min-w-0 grid-cols-1 gap-3 min-[380px]:grid-cols-2 sm:gap-4 lg:grid-cols-3">
 
                   {[1, 2, 3, 4, 5, 6].map((number) => (
 
@@ -332,7 +332,7 @@ export default function StudentCoursesPage() {
                         Semester {number}
                       </p>
 
-                      
+
 
                     </button>
 
@@ -366,5 +366,3 @@ export default function StudentCoursesPage() {
     </div>
   );
 }
-
-

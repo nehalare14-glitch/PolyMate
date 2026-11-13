@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { InstallAppButton } from "@/components/pwa/PWAProvider";
 import { BookOpen, GraduationCap, FileText } from "lucide-react";
 
 export default function Home() {
@@ -56,12 +57,14 @@ export default function Home() {
           </Link>
         </div>
 
+        <InstallAppButton className="mt-5" />
+
         <div className="mt-20 grid gap-5 text-left sm:grid-cols-3">
           <div className="rounded-2xl border border-slate-200 bg-white p-6">
             <GraduationCap className="text-blue-600" size={30} />
             <h2 className="mt-4 text-lg font-semibold">For Students</h2>
             <p className="mt-2 text-sm text-slate-600">
-              Find and download study materials for your branch and semester.
+              Find and view study materials for your branch and semester.
             </p>
           </div>
 

@@ -306,7 +306,7 @@ export default function InstitutionsClient() {
               No institutions found.
             </p>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="max-w-full overflow-x-auto overscroll-x-contain">
               <table className="w-full min-w-[750px] text-left text-sm">
                 <thead className="border-b border-slate-200 text-slate-500 dark:border-slate-700">
                   <tr>
@@ -399,7 +399,7 @@ export default function InstitutionsClient() {
             role="dialog"
             aria-modal="true"
             aria-label="Institution details"
-            className="w-full max-w-lg rounded-2xl bg-white p-6 dark:bg-slate-900"
+            className="max-h-[90dvh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-4 sm:p-6 dark:bg-slate-900"
           >
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-bold">

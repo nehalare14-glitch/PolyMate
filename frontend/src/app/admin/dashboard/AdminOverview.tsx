@@ -254,7 +254,7 @@ export default function AdminOverview({
 
       {/* WELCOME BANNER */}
 
-      <section className="rounded-2xl bg-[#172554] p-6 text-white md:p-8">
+      <section className="rounded-2xl bg-[#172554] p-4 text-white sm:p-6 md:p-8">
 
         <div className="flex flex-wrap items-start justify-between gap-5">
 
@@ -279,7 +279,7 @@ export default function AdminOverview({
             type="button"
             disabled={loading}
             onClick={() => setRefresh(v => v + 1)}
-            className="inline-flex h-10 items-center gap-2 rounded-lg border border-white/25 bg-white/10 px-4 text-sm font-medium hover:bg-white/20 disabled:opacity-50"
+            className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-white/25 bg-white/10 px-4 text-sm font-medium hover:bg-white/20 disabled:opacity-50"
           >
             <RefreshCw size={16} />
             {loading ? "Loading..." : "Refresh"}
@@ -324,7 +324,7 @@ export default function AdminOverview({
 
       {/* STATISTICS */}
 
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <section className="grid min-w-0 grid-cols-1 gap-3 min-[380px]:grid-cols-2 sm:gap-4 xl:grid-cols-4">
 
         {cards.map(card => {
           const Icon = card.icon;

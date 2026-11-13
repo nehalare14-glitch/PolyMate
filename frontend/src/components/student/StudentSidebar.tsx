@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import {
@@ -57,6 +57,39 @@ export default function StudentSidebar() {
 
   const [open, setOpen] = useState(false);
 
+  useEffect(() => {
+    if (!open) return;
+
+    const media = window.matchMedia("(min-width: 768px)");
+
+    if (media.matches) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    function handleKey(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setOpen(false);
+      }
+    }
+
+    function handleResize(event: MediaQueryListEvent) {
+      if (event.matches) {
+        setOpen(false);
+      }
+    }
+
+    window.addEventListener("keydown", handleKey);
+    media.addEventListener("change", handleResize);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", handleKey);
+      media.removeEventListener("change", handleResize);
+    };
+  }, [open]);
+
+
   return (
     <>
       <header className="fixed inset-x-0 top-0 z-30 flex h-16 items-center justify-between border-b border-slate-300 bg-white px-4 dark:border-[#30415D] dark:bg-[#0F1D38] md:hidden">
@@ -76,7 +109,7 @@ export default function StudentSidebar() {
           aria-label={open ? "Close navigation" : "Open navigation"}
           aria-expanded={open}
           aria-controls="student-sidebar"
-          className="rounded-lg p-2 hover:bg-slate-100 dark:hover:bg-[#223553]"
+          className="flex min-h-11 min-w-11 items-center justify-center rounded-lg p-2 hover:bg-slate-100 dark:hover:bg-[#223553]"
         >
           {open ? <X size={22} /> : <Menu size={22} />}
         </button>
@@ -101,8 +134,8 @@ export default function StudentSidebar() {
           transform-gpu transition-transform
           duration-200 ease-out
           motion-reduce:transition-none
-          md:translate-x-0
-          ${open ? "translate-x-0" : "-translate-x-full"}
+          md:visible md:translate-x-0
+          ${open ? "visible translate-x-0" : "invisible -translate-x-full"}
         `}
       >
         <div className="flex h-16 shrink-0 items-center justify-between border-b border-slate-300 px-5 dark:border-[#30415D]">
@@ -121,7 +154,7 @@ export default function StudentSidebar() {
             type="button"
             onClick={() => setOpen(false)}
             aria-label="Close navigation"
-            className="rounded-lg p-2 md:hidden"
+            className="flex min-h-11 min-w-11 items-center justify-center rounded-lg p-2 md:hidden"
           >
             <X size={20} />
           </button>

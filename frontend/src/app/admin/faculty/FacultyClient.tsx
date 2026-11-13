@@ -79,7 +79,7 @@ const input =
   "dark:bg-slate-950";
 
 const button =
-  "inline-flex items-center justify-center gap-2 " +
+  "inline-flex min-h-11 items-center justify-center gap-2 " +
   "rounded-lg border border-slate-200 px-3 py-2 " +
   "text-sm font-medium hover:bg-slate-50 " +
   "disabled:opacity-40 dark:border-slate-700 " +
@@ -595,7 +595,7 @@ export default function FacultyClient() {
             </div>
           )}
 
-          <div className="overflow-x-auto rounded-xl border
+          <div className="max-w-full overflow-x-auto overscroll-x-contain rounded-xl border
             border-slate-200 dark:border-slate-800">
 
             <table className="w-full min-w-[1000px] text-left text-sm">
@@ -812,7 +812,7 @@ export default function FacultyClient() {
 
           <section role="dialog" aria-modal="true"
             aria-label="Faculty profile"
-            className={`${panel} max-h-[90vh] w-full max-w-2xl
+            className={`${panel} max-h-[90dvh] w-full max-w-2xl
               overflow-y-auto p-6 shadow-xl`}>
 
             <div className="flex items-center justify-between">
@@ -939,7 +939,7 @@ export default function FacultyClient() {
 
           <section role="dialog" aria-modal="true"
             aria-label="Confirm faculty action"
-            className={`${panel} w-full max-w-md p-6 shadow-xl`}>
+            className={`${panel} max-h-[90dvh] w-full max-w-md overflow-y-auto p-4 shadow-xl sm:p-6`}>
 
             <h2 className="text-xl font-bold capitalize">
               {confirm.action} Faculty?

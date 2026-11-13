@@ -941,7 +941,7 @@ export default function SettingsClient() {
             role="dialog"
             aria-modal="true"
             aria-labelledby="dialog-title"
-            className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl dark:bg-slate-900"
+            className="max-h-[90dvh] w-full max-w-md overflow-y-auto rounded-2xl bg-white p-4 shadow-xl sm:p-6 dark:bg-slate-900"
           >
 
             <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-50 text-red-600 dark:bg-red-950">

@@ -683,7 +683,7 @@ export default function StudentsClient() {
 
           ) : (
 
-            <div className="overflow-x-auto">
+            <div className="max-w-full overflow-x-auto overscroll-x-contain">
 
               <table className="w-full min-w-[1150px] text-left text-sm">
 
@@ -895,7 +895,7 @@ export default function StudentsClient() {
             role="dialog"
             aria-modal="true"
             aria-label="Student profile"
-            className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-6 dark:bg-slate-900"
+            className="max-h-[90dvh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-6 dark:bg-slate-900"
           >
 
             <div className="flex items-center justify-between">

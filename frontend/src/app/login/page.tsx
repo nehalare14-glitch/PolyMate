@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { InstallAppButton } from "@/components/pwa/PWAProvider";
 import Image from "next/image";
 import logoLight from "../../../public/images/polymate-logo-light.png";
 import logoDark from "../../../public/images/polymate-logo-dark.jpeg";
@@ -351,6 +352,8 @@ export default function LoginPage() {
               </Link>
             </div>
           </div>
+
+          <InstallAppButton className="mt-6" />
 
           <p className="mt-6 text-center text-xs text-slate-400">
             Secure authentication powered by Firebase

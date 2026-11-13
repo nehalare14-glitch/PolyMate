@@ -67,7 +67,7 @@ function PDFViewerContent({
   }, [url]);
 
   const buttonClass =
-    "flex h-10 w-10 items-center justify-center rounded-lg " +
+    "flex h-11 w-11 shrink-0 items-center justify-center rounded-lg " +
     "hover:bg-slate-200 disabled:opacity-40 " +
     "dark:hover:bg-slate-700";
 
@@ -107,7 +107,7 @@ function PDFViewerContent({
           <ChevronRight size={20} />
         </button>
 
-        <span className="mx-1 h-6 w-px bg-slate-300 dark:bg-slate-700" />
+        <span className="mx-1 hidden h-6 w-px bg-slate-300 sm:block dark:bg-slate-700" />
 
         <button
           type="button"
@@ -123,7 +123,7 @@ function PDFViewerContent({
 
         <button
           type="button"
-          className="min-w-12 rounded-lg px-1 py-2 text-sm font-semibold"
+          className="min-h-11 min-w-12 rounded-lg px-1 py-2 text-sm font-semibold"
           aria-label="Reset zoom"
           onClick={() => setZoom(1)}
         >
@@ -156,7 +156,7 @@ function PDFViewerContent({
       {/* PDF document */}
       <div
         ref={containerRef}
-        className="min-h-0 min-w-0 flex-1 overflow-auto overscroll-contain p-3"
+        className="min-h-0 min-w-0 flex-1 overflow-auto overscroll-contain p-2 sm:p-3"
       >
         {error ? (
           <div className="flex flex-col items-center gap-3 p-8 text-center text-slate-600 dark:text-slate-300">

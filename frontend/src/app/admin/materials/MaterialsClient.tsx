@@ -118,6 +118,38 @@ export default function MaterialsClient() {
 
   const [ready, setReady] = useState(false);
   const [sidebar, setSidebar] = useState(false);
+
+  useEffect(() => {
+    if (!sidebar) return;
+
+    const media = window.matchMedia("(min-width: 1024px)");
+    if (media.matches) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    function handleKey(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setSidebar(false);
+      }
+    }
+
+    function handleResize(event: MediaQueryListEvent) {
+      if (event.matches) {
+        setSidebar(false);
+      }
+    }
+
+    window.addEventListener("keydown", handleKey);
+    media.addEventListener("change", handleResize);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", handleKey);
+      media.removeEventListener("change", handleResize);
+    };
+  }, [sidebar]);
+
   const [materials, setMaterials] = useState<Material[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
 
@@ -390,20 +422,20 @@ export default function MaterialsClient() {
   return (
     <div className="min-h-dvh bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
 
-      <aside className={`fixed inset-y-0 left-0 z-50 w-64 max-w-[85vw] overflow-y-auto border-r border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900 lg:translate-x-0 ${
-        sidebar ? "translate-x-0" : "-translate-x-full"
+      <aside className={`fixed inset-y-0 left-0 z-50 flex w-64 max-w-[85vw] flex-col overflow-hidden border-r border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900 lg:visible lg:translate-x-0 ${
+        sidebar ? "visible translate-x-0" : "invisible -translate-x-full"
       }`}>
-        <div className="flex h-20 items-center justify-between border-b border-slate-200 px-6 dark:border-slate-700">
+        <div className="flex h-20 shrink-0 items-center justify-between border-b border-slate-200 px-6 dark:border-slate-700">
           <div>
             <h2 className="text-xl font-bold text-blue-600">PolyMate</h2>
             <p className="text-xs text-slate-500">Admin Console</p>
           </div>
-          <button className="lg:hidden" onClick={() => setSidebar(false)} aria-label="Close navigation">
+          <button className="flex min-h-11 min-w-11 items-center justify-center lg:hidden" onClick={() => setSidebar(false)} aria-label="Close navigation">
             <X size={22} />
           </button>
         </div>
 
-        <nav className="space-y-1 p-4">
+        <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto overscroll-contain p-4">
           {navigation.map(({ name, href, icon: Icon }) => (
             <Link key={href} href={href}
               className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium ${
@@ -416,7 +448,7 @@ export default function MaterialsClient() {
           ))}
         </nav>
 
-        <div className="absolute bottom-0 w-full border-t border-slate-200 p-4 dark:border-slate-700">
+        <div className="w-full shrink-0 border-t border-slate-200 p-4 dark:border-slate-700">
           <button onClick={logout} disabled={busy}
             className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-red-600 hover:bg-red-50">
             <LogOut size={19} /> Log Out
@@ -430,10 +462,10 @@ export default function MaterialsClient() {
           className="fixed inset-0 z-40 bg-black/40 lg:hidden" />
       )}
 
-      <div className="lg:ml-64">
+      <div className="min-w-0 lg:ml-64">
         <header className="flex min-h-20 items-center justify-between border-b border-slate-200 bg-white px-5 dark:border-slate-700 dark:bg-slate-900 md:px-8">
           <div className="flex items-center gap-4">
-            <button className="lg:hidden" onClick={() => setSidebar(true)} aria-label="Open navigation">
+            <button className="flex min-h-11 min-w-11 items-center justify-center lg:hidden" onClick={() => setSidebar(true)} aria-label="Open navigation" aria-expanded={sidebar}>
               <Menu size={24} />
             </button>
             <div>
@@ -444,7 +476,7 @@ export default function MaterialsClient() {
           <ThemeToggle />
         </header>
 
-        <main className="mx-auto max-w-7xl space-y-6 p-3 sm:p-5 md:p-8">
+        <main className="mx-auto min-w-0 max-w-7xl space-y-6 p-3 sm:p-5 md:p-8">
 
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
@@ -559,7 +591,7 @@ export default function MaterialsClient() {
                 ) : materials.length === 0 ? (
                   <p className="py-10 text-center text-sm text-slate-500">No materials found.</p>
                 ) : (
-                  <div className="overflow-x-auto">
+                  <div className="max-w-full overflow-x-auto overscroll-x-contain">
                     <table className="w-full min-w-[850px] text-left text-sm">
                       <thead className="border-b border-slate-200 text-slate-500 dark:border-slate-700">
                         <tr>
@@ -693,7 +725,7 @@ export default function MaterialsClient() {
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4">
           <form role="dialog" aria-modal="true" aria-label="Edit material"
             onSubmit={(e) => { e.preventDefault(); saveEdit(); }}
-            className="max-h-[90vh] w-full max-w-lg space-y-4 overflow-y-auto rounded-2xl bg-white p-6 dark:bg-slate-900">
+            className="max-h-[90dvh] w-full max-w-lg space-y-4 overflow-y-auto rounded-2xl bg-white p-6 dark:bg-slate-900">
 
             <h2 className="text-xl font-bold">Edit Material</h2>
 
@@ -749,7 +781,7 @@ export default function MaterialsClient() {
       {preview && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-3 md:p-6">
           <section role="dialog" aria-modal="true" aria-label="PDF preview"
-            className="flex h-[90vh] w-full max-w-6xl flex-col overflow-hidden rounded-2xl bg-white dark:bg-slate-900">
+            className="flex h-[90dvh] w-full max-w-6xl flex-col overflow-hidden rounded-2xl bg-white dark:bg-slate-900">
             <div className="flex items-center justify-between border-b border-slate-200 p-4 dark:border-slate-700">
               <h2 className="truncate font-semibold">{preview.title}</h2>
               <button className={btn} onClick={() => setPreview(null)}>

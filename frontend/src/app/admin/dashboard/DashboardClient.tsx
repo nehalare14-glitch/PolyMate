@@ -76,6 +76,38 @@ export default function AdminDashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
+    if (!sidebarOpen) return;
+
+    const media = window.matchMedia("(min-width: 1024px)");
+    if (media.matches) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    function handleKey(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setSidebarOpen(false);
+      }
+    }
+
+    function handleResize(event: MediaQueryListEvent) {
+      if (event.matches) {
+        setSidebarOpen(false);
+      }
+    }
+
+    window.addEventListener("keydown", handleKey);
+    media.addEventListener("change", handleResize);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", handleKey);
+      media.removeEventListener("change", handleResize);
+    };
+  }, [sidebarOpen]);
+
+
+  useEffect(() => {
     let active = true;
 
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
@@ -139,11 +171,11 @@ export default function AdminDashboard() {
   return (
     <div className="min-h-dvh bg-[#F6F8FC] text-slate-900 dark:bg-[#0B1220] dark:text-slate-100">
       <aside
-        className={`fixed inset-y-0 left-0 z-50 w-64 max-w-[85vw] overflow-y-auto border-r border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 transition-transform lg:translate-x-0 ${
-          sidebarOpen ? "translate-x-0" : "-translate-x-full"
+        className={`fixed inset-y-0 left-0 z-50 flex w-64 max-w-[85vw] flex-col overflow-hidden border-r border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 transition-transform lg:visible lg:translate-x-0 ${
+          sidebarOpen ? "visible translate-x-0" : "invisible -translate-x-full"
         }`}
       >
-        <div className="flex h-20 items-center justify-between border-b border-slate-100 px-6 dark:border-slate-800">
+        <div className="flex h-20 shrink-0 items-center justify-between border-b border-slate-100 px-6 dark:border-slate-800">
           <div>
             <h2 className="text-xl font-bold text-blue-700 dark:text-blue-400">
               PolyMate
@@ -156,14 +188,14 @@ export default function AdminDashboard() {
           <button
             type="button"
             onClick={() => setSidebarOpen(false)}
-            className="lg:hidden"
+            className="flex min-h-11 min-w-11 items-center justify-center lg:hidden"
             aria-label="Close navigation"
           >
             <X size={22} />
           </button>
         </div>
 
-        <nav className="space-y-1 p-4" aria-label="Admin navigation">
+        <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto overscroll-contain p-4" aria-label="Admin navigation">
           {navigation.map((item) => {
             const Icon = item.icon;
 
@@ -204,7 +236,7 @@ export default function AdminDashboard() {
           })}
         </nav>
 
-        <div className="absolute bottom-0 w-full border-t border-slate-100 p-4 dark:border-slate-800">
+        <div className="w-full shrink-0 border-t border-slate-100 p-4 dark:border-slate-800">
           <button
             type="button"
             onClick={handleLogout}
@@ -225,14 +257,14 @@ export default function AdminDashboard() {
         />
       )}
 
-      <div className="lg:ml-64">
+      <div className="min-w-0 lg:ml-64">
         <header className="flex min-h-20 items-center justify-between gap-4 border-b border-slate-200 bg-white px-5 py-3 dark:border-slate-700 dark:bg-slate-900 md:px-8">
   <div className="flex min-w-0 items-center gap-4">
     <button
       type="button"
       onClick={() => setSidebarOpen(true)}
-      className="shrink-0 lg:hidden"
-      aria-label="Open navigation"
+      className="flex min-h-11 min-w-11 shrink-0 items-center justify-center lg:hidden"
+      aria-label="Open navigation" aria-expanded={sidebarOpen}
     >
       <Menu size={24} />
     </button>
@@ -263,7 +295,7 @@ export default function AdminDashboard() {
   </div>
 </header>
 
-        <main className="mx-auto max-w-[1600px] space-y-6 p-4 md:p-8">
+        <main className="mx-auto min-w-0 max-w-[1600px] space-y-6 p-4 md:p-8">
 
           {error && (
             <div
