@@ -169,6 +169,10 @@ app.register_blueprint(community_messages_bp)
 from routes.admin_email import admin_email_bp
 app.register_blueprint(admin_email_bp)
 
+from routes.community_email_jobs import community_email_jobs_bp
+
+app.register_blueprint(community_email_jobs_bp)
+
 from middleware.security import init_security
 
 init_security(app)
