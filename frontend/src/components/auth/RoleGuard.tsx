@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { onAuthStateChanged } from "firebase/auth";
+import { subscribeSmartSync } from "@/lib/smart-sync";
 
 import { auth } from "@/lib/firebase";
 import { getCurrentProfile } from "@/lib/auth-service";
@@ -31,66 +31,124 @@ export default function RoleGuard({
   useEffect(() => {
     let active = true;
 
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (!active) return;
+    const unsubscribe = subscribeSmartSync(
+      auth,
+      async (user, initial) => {
+        if (!active) return;
 
-      setAuthorized(false);
-      setError("");
+        if (initial) {
+          setAuthorized(false);
+          setError("");
+        }
 
-      if (!user) {
-        router.replace("/login");
-        return;
-      }
-
-      try {
-        await user.reload();
-
-        if (!user.emailVerified) {
+        if (!user) {
+          setAuthorized(false);
           router.replace("/login");
           return;
         }
 
-        const response = await getCurrentProfile() as {
-          user: {
-            role: UserRole;
-            approval_status?: string;
+        const uid = user.uid;
+
+        function isCurrent() {
+          return active && auth.currentUser?.uid === uid;
+        }
+
+        function deny(message: string) {
+          if (!isCurrent()) return;
+
+          setAuthorized(false);
+          setError(message);
+        }
+
+        try {
+          // Revalidate the Firebase account.
+          await user.reload();
+
+          if (!isCurrent()) return;
+
+          if (!user.emailVerified) {
+            setAuthorized(false);
+            router.replace("/login");
+            return;
+          }
+
+          // Refresh credentials before checking the backend.
+          await user.getIdToken(true);
+
+          if (!isCurrent()) return;
+
+          // Flask remains the authority for account permissions.
+          const response = await getCurrentProfile() as {
+            user: {
+              role: UserRole;
+              approval_status?: string;
+            };
           };
-        };
-        if (!active) return;
 
-        const role = response.user.role as UserRole;
+          if (!isCurrent()) return;
 
-        if (!validRoles.includes(role)) {
-          setError("Your account has an invalid role.");
-          return;
-        }
+          const role = response.user.role;
 
+          if (!validRoles.includes(role)) {
+            deny("Your account has an invalid role.");
+            return;
+          }
 
+          if (!allowedRoleKey.split("|").includes(role)) {
+            setAuthorized(false);
+            router.replace(getDashboardPath(role));
+            return;
+          }
 
-        if (!allowedRoleKey.split("|").includes(role)) {
-          router.replace(getDashboardPath(role));
-          return;
-        }
+          if (
+            role === "faculty" &&
+            response.user.approval_status !== "approved"
+          ) {
+            deny(
+              "Your faculty account is not approved. " +
+              "Please contact your administrator."
+            );
+            return;
+          }
 
-        if (
-          role === "faculty" &&
-          response.user.approval_status !== "approved"
-        ) {
-          setError(
-            "Your faculty account is awaiting approval. Faculty features are not available yet."
+          // Keep the existing portal mounted during
+          // successful background verification.
+          setError("");
+          setAuthorized(true);
+
+        } catch (err) {
+          if (!isCurrent()) return;
+
+          const code =
+            typeof err === "object" &&
+            err !== null &&
+            "code" in err
+              ? String(err.code)
+              : "";
+
+          if (
+            code === "auth/user-disabled" ||
+            code === "auth/user-not-found" ||
+            code === "auth/user-token-expired" ||
+            code === "auth/invalid-user-token"
+          ) {
+            deny(
+              "Your account is no longer authorized. " +
+              "Please contact your administrator."
+            );
+            return;
+          }
+
+          // Fail closed if account permissions
+          // cannot be verified.
+          deny(
+            "Unable to verify your account permissions. " +
+            "Please check your connection or sign in again."
           );
-          return;
         }
-
-        setAuthorized(true);
-      } catch {
-        if (active) {
-          setError(
-            "Unable to verify your account permissions. Please try again."
-          );
-        }
-      }
-    });
+      },
+      { intervalMs: 30000 }
+    );
 
     return () => {
       active = false;
