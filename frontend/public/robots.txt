@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+
+Disallow: /student/
+Disallow: /faculty/
+Disallow: /admin/
+Disallow: /api/
+
+Sitemap: https://polymate-frontend.vercel.app/sitemap.xml
