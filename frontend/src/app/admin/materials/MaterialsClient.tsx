@@ -9,6 +9,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase";
+import {
+  subscribeSmartSync,
+  notifySmartSync,
+} from "@/lib/smart-sync";
 import ThemeToggle from "@/components/theme/ThemeToggle";
 
 import {
@@ -257,10 +261,19 @@ export default function MaterialsClient() {
       }
     }
 
-    void fetchData();
+    const unsubscribe = subscribeSmartSync(
+      auth,
+      async (user) => {
+        if (!user || busy || editing) return;
+
+        await fetchData();
+      },
+      { intervalMs: 30000 }
+    );
 
     return () => {
       active = false;
+      unsubscribe();
     };
   }, [
     ready,
@@ -273,6 +286,8 @@ export default function MaterialsClient() {
     semester,
     type,
     activityPage,
+    busy,
+    editing,
   ]);
 
   async function perform(operation: () => Promise<void>) {
@@ -315,6 +330,7 @@ export default function MaterialsClient() {
       setEditing(null);
       setMessage(result.message);
       refreshMaterials();
+      notifySmartSync();
     });
   }
 
@@ -344,6 +360,7 @@ export default function MaterialsClient() {
 
       setMessage(result.message);
       refreshMaterials();
+      notifySmartSync();
     });
   }
 

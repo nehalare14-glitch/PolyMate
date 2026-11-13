@@ -2,7 +2,10 @@
 
 import { useEffect, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
-import { subscribeSmartSync } from "@/lib/smart-sync";
+import {
+  subscribeSmartSync,
+  notifySmartSync,
+} from "@/lib/smart-sync";
 import {
   GraduationCap, ShieldCheck, Clock, UserX,
   Search, RefreshCw, Eye, Trash2, X,
@@ -374,6 +377,7 @@ export default function FacultyClient() {
       setSelected([]);
       setProfile(null);
       setRefresh(v => v + 1);
+      notifySmartSync();
 
     } catch (e) {
       setError(e instanceof Error ? e.message : "Action failed");

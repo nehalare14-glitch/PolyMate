@@ -21,6 +21,7 @@ import {
 } from "@/data/curriculum";
 
 import { auth } from "@/lib/firebase";
+import { subscribeSmartSync } from "@/lib/smart-sync";
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ??
@@ -104,10 +105,13 @@ export default function CourseSubjects({
 
     let active = true;
 
-    async function loadMaterials() {
-      setLoading(true);
+    async function loadMaterials(initial: boolean) {
+      if (initial) {
+        setLoading(true);
+        setMaterials([]);
+      }
+
       setError("");
-      setMaterials([]);
 
       try {
         const found: Material[] = [];
@@ -169,10 +173,25 @@ export default function CourseSubjects({
       }
     }
 
-    void loadMaterials();
+    const unsubscribe = subscribeSmartSync(
+      auth,
+      async (user, initial) => {
+        if (!user) {
+          if (active) {
+            setMaterials([]);
+            setLoading(false);
+          }
+          return;
+        }
+
+        await loadMaterials(initial);
+      },
+      { intervalMs: 30000 }
+    );
 
     return () => {
       active = false;
+      unsubscribe();
     };
   }, [branch, semester, subject, type, retry]);
 

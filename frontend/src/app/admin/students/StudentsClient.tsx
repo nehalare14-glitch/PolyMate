@@ -2,7 +2,10 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { subscribeSmartSync } from "@/lib/smart-sync";
+import {
+  subscribeSmartSync,
+  notifySmartSync,
+} from "@/lib/smart-sync";
 import { auth } from "@/lib/firebase";
 import {
   Users, ShieldCheck, Mail, UserX,
@@ -213,6 +216,10 @@ export default function StudentsClient() {
       setPage(1);
       setRefresh(value => value + 1);
 
+      if (removed > 0) {
+        notifySmartSync();
+      }
+
     } catch (err) {
 
       setBulkResult(
@@ -277,6 +284,7 @@ export default function StudentsClient() {
       setNotice("Student removed successfully.");
       setPage(1);
       setRefresh(value => value + 1);
+      notifySmartSync();
 
     } catch (err) {
 
