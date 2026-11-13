@@ -232,11 +232,22 @@ export default function AdminCommunityPage() {
 
   const [tickets, setTickets] = useState<Ticket[]>([]);
 
+  const [notificationFilter, setNotificationFilter] =
+    useState<"all" | "attention" | "new" | "unread">("all");
+
   const [category, setCategory] = useState("all");
   const [status, setStatus] = useState("all");
 
-  const [escalatedOnly, setEscalatedOnly] =
+  const [escalatedOnly, updateEscalatedOnly] =
     useState(false);
+
+  function setEscalatedOnly(value: boolean) {
+    if (value) {
+      setNotificationFilter("all");
+    }
+
+    updateEscalatedOnly(value);
+  }
 
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
@@ -300,10 +311,12 @@ export default function AdminCommunityPage() {
 
   }, []);
 
-  const loadList = useCallback(async () => {
+  const loadList = useCallback(async (background = false) => {
 
-    setLoading(true);
-    setError("");
+    if (!background) {
+      setLoading(true);
+      setError("");
+    }
 
     try {
 
@@ -311,6 +324,10 @@ export default function AdminCommunityPage() {
         page: String(page),
         limit: "20",
       });
+
+      if (notificationFilter !== "all") {
+        params.set("notification", notificationFilter);
+      }
 
       if (category !== "all") {
         params.set("category", category);
@@ -333,12 +350,25 @@ export default function AdminCommunityPage() {
       ]);
 
       setSummary(stats);
-      setTickets(result.requests || []);
-      setTotal(result.total || 0);
+
+      const nextTotal = result.total || 0;
+      const nextTickets = result.requests || [];
+      const lastPage = Math.max(1, Math.ceil(nextTotal / 20));
+
+      setTotal(nextTotal);
+
+      if (page > lastPage) {
+        setPage(lastPage);
+        return;
+      }
+
+      setTickets(nextTickets);
 
       await loadUnread(result.requests || []);
 
     } catch (err) {
+
+      if (background) return;
 
       setError(
         err instanceof Error
@@ -348,11 +378,13 @@ export default function AdminCommunityPage() {
 
     } finally {
 
-      setLoading(false);
+      if (!background) {
+        setLoading(false);
+      }
 
     }
 
-  }, [category, status, page, loadUnread, escalatedOnly]);
+  }, [category, status, page, loadUnread, notificationFilter, escalatedOnly]);
 
   useEffect(() => {
 
@@ -394,7 +426,11 @@ export default function AdminCommunityPage() {
         }),
       });
 
-      await loadUnread(tickets);
+      if (notificationFilter !== "all") {
+        await loadList(true);
+      } else {
+        await loadUnread(tickets);
+      }
 
     }
 
@@ -614,13 +650,13 @@ export default function AdminCommunityPage() {
 
   }
 
-  // SMART REFRESH 6B
+  // SMART REFRESH 8D
 
   const activeTicketId = selected?.request.id;
 
   useSmartRefresh(async () => {
 
-    await loadUnread(tickets);
+    await loadList(true);
 
   }, {
     enabled: !loading && !busy,
@@ -722,6 +758,28 @@ export default function AdminCommunityPage() {
     loading,
   ]);
 
+  function selectNotification(
+    filter: "all" | "attention" | "new" | "unread"
+  ) {
+    if (busy || loading) return;
+
+    setNotificationFilter(filter);
+    setEscalatedOnly(false);
+    setCategory("all");
+    setStatus("all");
+    setPage(1);
+    setSelected(null);
+    setError("");
+    setSuccess("");
+  }
+
+  const notificationLabels = {
+    all: "All Requests",
+    attention: "Requires Attention",
+    new: "New Requests",
+    unread: "Unread Replies",
+  };
+
   const ticket = selected?.request;
 
   const canReply = Boolean(
@@ -747,57 +805,123 @@ export default function AdminCommunityPage() {
 
           <div className="flex items-center gap-3">
 
-            <div className="relative rounded-xl bg-blue-100 p-3 text-blue-700 dark:bg-blue-950 dark:text-blue-300">
-
+            <button
+              type="button"
+              aria-label="Show tickets requiring attention"
+              aria-pressed={notificationFilter === "attention"}
+              disabled={busy || loading}
+              onClick={() => selectNotification("attention")}
+              className={`relative rounded-xl bg-blue-100 p-3 text-blue-700 hover:bg-blue-200 disabled:opacity-50 dark:bg-blue-950 dark:text-blue-300 dark:hover:bg-blue-900 ${
+                notificationFilter === "attention"
+                  ? "ring-2 ring-blue-500"
+                  : ""
+              }`}
+            >
               <Bell size={22} />
 
               {unreadSummary.unread_tickets > 0 && (
-
                 <span className="absolute -right-2 -top-2 rounded-full bg-red-600 px-2 py-0.5 text-xs font-bold text-white">
-
                   {unreadSummary.unread_tickets}
-
                 </span>
-
               )}
-
-            </div>
+            </button>
 
             <div>
-
               <p className="font-semibold">
                 Community Notifications
               </p>
 
               <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-
                 {unreadSummary.unread_tickets === 0
                   ? "You are all caught up."
-                  : `${unreadSummary.unread_tickets} tickets require attention.`}
-
+                  : `${unreadSummary.unread_tickets} ${
+                      unreadSummary.unread_tickets === 1
+                        ? "ticket requires"
+                        : "tickets require"
+                    } attention.`}
               </p>
-
             </div>
 
           </div>
 
           <div className="flex flex-wrap gap-2 text-xs font-semibold">
 
-            <span className="rounded-full bg-white px-3 py-2 text-blue-700 dark:bg-[#0F1D38] dark:text-blue-300">
+            <button
+              type="button"
+              disabled={busy || loading}
+              aria-pressed={notificationFilter === "new"}
+              onClick={() => selectNotification("new")}
+              className={`rounded-full px-3 py-2 disabled:opacity-50 ${
+                notificationFilter === "new"
+                  ? "bg-blue-600 text-white"
+                  : "bg-white text-blue-700 hover:bg-blue-100 dark:bg-[#0F1D38] dark:text-blue-300 dark:hover:bg-blue-900"
+              }`}
+            >
+              {unreadSummary.new_requests}{" "}
+              {unreadSummary.new_requests === 1
+                ? "new request"
+                : "new requests"}
+            </button>
 
-              {unreadSummary.new_requests} new requests
+            <button
+              type="button"
+              disabled={busy || loading}
+              aria-pressed={notificationFilter === "unread"}
+              onClick={() => selectNotification("unread")}
+              className={`rounded-full px-3 py-2 disabled:opacity-50 ${
+                notificationFilter === "unread"
+                  ? "bg-blue-600 text-white"
+                  : "bg-white text-blue-700 hover:bg-blue-100 dark:bg-[#0F1D38] dark:text-blue-300 dark:hover:bg-blue-900"
+              }`}
+            >
+              {unreadSummary.unread_messages}{" "}
+              {unreadSummary.unread_messages === 1
+                ? "unread reply"
+                : "unread replies"}
+            </button>
 
-            </span>
-
-            <span className="rounded-full bg-white px-3 py-2 text-blue-700 dark:bg-[#0F1D38] dark:text-blue-300">
-
-              {unreadSummary.unread_messages} unread replies
-
-            </span>
+            {notificationFilter !== "all" && (
+              <button
+                type="button"
+                disabled={busy || loading}
+                onClick={() => selectNotification("all")}
+                className="rounded-full border border-blue-300 px-3 py-2 text-blue-700 hover:bg-blue-100 disabled:opacity-50 dark:border-blue-800 dark:text-blue-300 dark:hover:bg-blue-900"
+              >
+                View All
+              </button>
+            )}
 
           </div>
 
         </section>
+
+        {notificationFilter !== "all" && (
+          <div
+            role="status"
+            className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800 dark:border-blue-900 dark:bg-[#172B4C] dark:text-blue-300"
+          >
+            <div>
+              <span className="font-semibold">
+                {notificationLabels[notificationFilter]}
+              </span>
+
+              <span className="ml-2">
+                {loading
+                  ? "Loading..."
+                  : `${total} matching ${total === 1 ? "ticket" : "tickets"}`}
+              </span>
+            </div>
+
+            <button
+              type="button"
+              disabled={busy || loading}
+              onClick={() => selectNotification("all")}
+              className="font-semibold hover:underline disabled:opacity-50"
+            >
+              Clear Filter
+            </button>
+          </div>
+        )}
 
         <header className="flex flex-wrap items-center justify-between gap-4">
 

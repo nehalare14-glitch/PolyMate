@@ -141,11 +141,60 @@ def list_requests():
     category = request.args.get("category")
     status = request.args.get("status")
     escalated = request.args.get("escalated")
+    notification = request.args.get("notification")
+
+    if notification not in (
+        None, "attention", "new", "unread"
+    ):
+        return jsonify({
+            "error": "Invalid notification filter"
+        }), 400
 
     if escalated not in (None, "true", "false"):
         return jsonify({
             "error": "Invalid escalated filter"
         }), 400
+
+    if notification:
+
+        if category and category not in CATEGORIES:
+            return jsonify({
+                "error": "Invalid category"
+            }), 400
+
+        if status and status not in STATUSES:
+            return jsonify({
+                "error": "Invalid status"
+            }), 400
+
+        if escalated == "true":
+            return jsonify({
+                "error": "Notification and escalation filters cannot be combined"
+            }), 400
+
+        result = get_supabase().rpc(
+            "community_admin_notification_requests",
+            {
+                "p_admin_uid": g.firebase_uid,
+                "p_filter": notification,
+                "p_category": category,
+                "p_status": status,
+                "p_offset": offset,
+                "p_limit": limit,
+            },
+        ).execute()
+
+        data = result.data
+
+        if not isinstance(data, dict):
+            return jsonify({
+                "error": "Invalid notification response"
+            }), 503
+
+        return jsonify({
+            "requests": data.get("requests", []),
+            "total": data.get("total", 0),
+        })
 
     query = (
         get_supabase()
