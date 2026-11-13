@@ -185,6 +185,9 @@ export default function SettingsClient() {
   const [emailConfigured, setEmailConfigured] =
     useState<boolean | null>(null);
 
+  const [automaticActive, setAutomaticActive] =
+    useState<boolean | null>(null);
+
   const [emailTestPassed, setEmailTestPassed] =
     useState(false);
 
@@ -407,6 +410,7 @@ export default function SettingsClient() {
   function checkEmailStatus() {
     void perform("email-status", async () => {
       setEmailConfigured(null);
+      setAutomaticActive(null);
       setEmailTestPassed(false);
 
       const data = await request(
@@ -421,6 +425,12 @@ export default function SettingsClient() {
       }
 
       setEmailConfigured(data.configured);
+
+      setAutomaticActive(
+        typeof data.automatic_active === "boolean"
+          ? data.automatic_active
+          : null
+      );
 
       setMessage(
         data.configured
@@ -993,8 +1003,20 @@ export default function SettingsClient() {
                         Automatic Notifications
                       </span>
 
-                      <span className="text-right text-xs font-medium text-slate-500 dark:text-slate-400">
-                        Not Active
+                      <span className={`text-right text-xs font-semibold ${
+                        automaticActive === true
+                          ? "text-emerald-600 dark:text-emerald-400"
+                          : "text-slate-500 dark:text-slate-400"
+                      }`}>
+                        {busy === "email-status"
+                          ? "Checking..."
+                          : automaticActive === true
+                          ? "Active"
+                          : automaticActive === false
+                          ? "Not Active"
+                          : emailConfigured === null
+                          ? "Not Checked"
+                          : "Status Unavailable"}
                       </span>
                     </div>
                   </div>

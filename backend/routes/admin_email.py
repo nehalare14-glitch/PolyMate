@@ -1,9 +1,11 @@
+import os
 from functools import wraps
 
 from flask import Blueprint, jsonify, g, current_app
 
 from middleware.firebase_auth import require_firebase_auth
 from services.profiles import get_profile
+from services.supabase_client import get_supabase
 from services.gmail_service import gmail_configured, send_test_email
 
 
@@ -52,9 +54,71 @@ def disable_cache(response):
 @admin_email_bp.get("/status")
 @admin_only
 def email_status():
+    configured = gmail_configured()
+
+    auto_enabled = (
+        os.getenv(
+            "COMMUNITY_EMAIL_AUTO_ENABLED", ""
+        ).strip().lower() == "true"
+    )
+
+    secret_configured = len(
+        os.getenv(
+            "COMMUNITY_EMAIL_JOB_SECRET", ""
+        ).strip()
+    ) >= 32
+
+    scheduler_active = None
+    scheduler_configured = None
+    scheduler_schedule = None
+
+    try:
+        result = get_supabase().rpc(
+            "community_email_scheduler_status",
+            {},
+        ).execute().data
+
+        if (
+            not isinstance(result, dict)
+            or not isinstance(
+                result.get("active"), bool
+            )
+            or not isinstance(
+                result.get("configured"), bool
+            )
+        ):
+            raise RuntimeError(
+                "Invalid scheduler status"
+            )
+
+        scheduler_active = result["active"]
+        scheduler_configured = result["configured"]
+        scheduler_schedule = result.get("schedule")
+
+    except Exception as exc:
+        current_app.logger.warning(
+            "Email scheduler status unavailable: %s",
+            type(exc).__name__,
+        )
+
+    if not auto_enabled or not configured or not secret_configured:
+        automatic_active = False
+    elif scheduler_active is None:
+        automatic_active = None
+    else:
+        automatic_active = (
+            scheduler_active
+            and scheduler_configured is True
+        )
+
     return jsonify({
         "provider": "gmail",
-        "configured": gmail_configured(),
+        "configured": configured,
+        "auto_enabled": auto_enabled,
+        "scheduler_configured": scheduler_configured,
+        "scheduler_active": scheduler_active,
+        "scheduler_schedule": scheduler_schedule,
+        "automatic_active": automatic_active,
     })
 
 
