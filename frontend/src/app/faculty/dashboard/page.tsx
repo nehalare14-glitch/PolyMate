@@ -7,7 +7,7 @@ import PDFViewer from "@/components/shared/PDFViewerDynamic";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import ThemeToggle from "@/components/theme/ThemeToggle";
-import { onAuthStateChanged } from "firebase/auth";
+import { subscribeSmartSync } from "@/lib/smart-sync";
 import {
   BookOpen,
   FolderOpen,
@@ -139,16 +139,19 @@ export default function FacultyDashboardPage() {
   useEffect(() => {
     let active = true;
 
-    const unsubscribe = onAuthStateChanged(
+    const unsubscribe = subscribeSmartSync(
       auth,
-      async (user) => {
+      async (user, initial) => {
         if (!active) return;
 
-        setLoading(true);
+        if (initial) {
+          setLoading(true);
+          setName("");
+          setBranch("");
+          setMaterials([]);
+        }
+
         setError("");
-        setName("");
-        setBranch("");
-        setMaterials([]);
 
         if (!user) {
           setError("Please sign in again.");
@@ -189,7 +192,7 @@ export default function FacultyDashboardPage() {
             profileData.profile ??
             profileData;
 
-          if (active) {
+          if (active && auth.currentUser?.uid === user.uid) {
             setName(
               profile.name ||
               profile.full_name ||
@@ -214,7 +217,7 @@ export default function FacultyDashboardPage() {
             );
           }
 
-          if (active) {
+          if (active && auth.currentUser?.uid === user.uid) {
             const items: Material[] =
               Array.isArray(materialsData.materials)
                 ? materialsData.materials
@@ -231,7 +234,7 @@ export default function FacultyDashboardPage() {
             );
           }
         } catch (err) {
-          if (active) {
+          if (active && auth.currentUser?.uid === user.uid) {
             setError(
               err instanceof Error
                 ? err.message
@@ -239,9 +242,12 @@ export default function FacultyDashboardPage() {
             );
           }
         } finally {
-          if (active) setLoading(false);
+          if (active && auth.currentUser?.uid === user.uid) {
+            setLoading(false);
+          }
         }
-      }
+      },
+      { intervalMs: 30000 }
     );
 
     return () => {

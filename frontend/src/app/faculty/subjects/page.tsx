@@ -6,7 +6,7 @@ import PDFViewer from "@/components/shared/PDFViewerDynamic";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { onAuthStateChanged } from "firebase/auth";
+import { subscribeSmartSync } from "@/lib/smart-sync";
 import {
   ArrowLeft,
   ArrowRight,
@@ -101,15 +101,18 @@ export default function FacultySubjectsPage() {
   useEffect(() => {
     let active = true;
 
-    const unsubscribe = onAuthStateChanged(
+    const unsubscribe = subscribeSmartSync(
       auth,
-      async (user) => {
+      async (user, initial) => {
         if (!active) return;
 
-        setLoading(true);
+        if (initial) {
+          setLoading(true);
+          setBranch("");
+          setMaterials([]);
+        }
+
         setError("");
-        setBranch("");
-        setMaterials([]);
 
         if (!user) {
           setError("Please sign in again.");
@@ -169,7 +172,10 @@ export default function FacultySubjectsPage() {
             );
           }
 
-          if (!active) return;
+          if (
+            !active ||
+            auth.currentUser?.uid !== user.uid
+          ) return;
 
           setBranch(registeredBranch);
           setMaterials(materialsData.materials ?? []);
@@ -182,9 +188,12 @@ export default function FacultySubjectsPage() {
             );
           }
         } finally {
-          if (active) setLoading(false);
+          if (active && auth.currentUser?.uid === user.uid) {
+            setLoading(false);
+          }
         }
-      }
+      },
+      { intervalMs: 30000 }
     );
 
     return () => {

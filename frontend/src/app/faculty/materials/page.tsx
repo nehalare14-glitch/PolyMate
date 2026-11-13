@@ -6,7 +6,10 @@ import PDFViewer from "@/components/shared/PDFViewerDynamic";
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { onAuthStateChanged } from "firebase/auth";
+import {
+  subscribeSmartSync,
+  notifySmartSync,
+} from "@/lib/smart-sync";
 import {
   Eye,
   FileText,
@@ -111,14 +114,17 @@ export default function FacultyMaterialsPage() {
   useEffect(() => {
     let active = true;
 
-    const unsubscribe = onAuthStateChanged(
+    const unsubscribe = subscribeSmartSync(
       auth,
-      async (user) => {
+      async (user, initial) => {
         if (!active) return;
 
-        setLoading(true);
+        if (initial) {
+          setLoading(true);
+          setMaterials([]);
+        }
+
         setError("");
-        setMaterials([]);
 
         if (!user) {
           setError("Please sign in again.");
@@ -147,7 +153,7 @@ export default function FacultyMaterialsPage() {
             );
           }
 
-          if (active) {
+          if (active && auth.currentUser?.uid === user.uid) {
             setMaterials(
               Array.isArray(data.materials)
                 ? data.materials
@@ -155,7 +161,7 @@ export default function FacultyMaterialsPage() {
             );
           }
         } catch (err) {
-          if (active) {
+          if (active && auth.currentUser?.uid === user.uid) {
             setError(
               err instanceof Error
                 ? err.message
@@ -163,9 +169,12 @@ export default function FacultyMaterialsPage() {
             );
           }
         } finally {
-          if (active) setLoading(false);
+          if (active && auth.currentUser?.uid === user.uid) {
+            setLoading(false);
+          }
         }
-      }
+      },
+      { intervalMs: 30000 }
     );
 
     return () => {
@@ -580,6 +589,7 @@ export default function FacultyMaterialsPage() {
             setManagement(null);
             setSuccessMessage(message);
             setRetry((value) => value + 1);
+            notifySmartSync();
           }}
         />
       )}

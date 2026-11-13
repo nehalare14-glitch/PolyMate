@@ -1,5 +1,6 @@
 "use client";
 import { auth } from "@/lib/firebase";
+import { notifySmartSync } from "@/lib/smart-sync";
 import { onAuthStateChanged } from "firebase/auth";
 
 import { useEffect, useState } from "react";
@@ -220,6 +221,7 @@ export default function UploadPage() {
       }
 
       setSuccess("PDF uploaded successfully!");
+      notifySmartSync();
 
       if (uploadFromSubject && selectedSubject) {
         const returnUrl =
