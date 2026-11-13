@@ -328,28 +328,13 @@ export async function removeStudentBookmark(id: string) {
 }
 
 export async function getStudentBookmarkIds(): Promise<string[]> {
-  const ids: string[] = [];
-  let page = 1;
-  const limit = 100;
+  const result = await apiRequest(
+    "/api/student/bookmarks/ids"
+  );
 
-  while (true) {
-    const result = await getStudentBookmarks(
-      undefined,
-      page,
-      limit
-    );
-
-    ids.push(...result.bookmarks.map(item => item.id));
-
-    if (
-      result.bookmarks.length < limit ||
-      ids.length >= result.total
-    ) {
-      break;
-    }
-
-    page++;
+  if (!Array.isArray(result.ids)) {
+    throw new Error("Invalid bookmark IDs response.");
   }
 
-  return ids;
+  return result.ids;
 }

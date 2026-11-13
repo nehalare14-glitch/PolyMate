@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { InstallAppButton } from "@/components/pwa/PWAProvider";
 import Image from "next/image";
-import logoLight from "../../../public/images/polymate-logo-light.png";
+import logoLight from "../../../public/images/polymate-logo-light.webp";
 import logoDark from "../../../public/images/polymate-logo-dark.jpeg";
 import googleLogo from "../../../public/images/google-logo.png";
 import {

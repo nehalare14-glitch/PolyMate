@@ -52,6 +52,16 @@ export function subscribeSmartSync(
   let lastStarted = 0;
 
   let timer: ReturnType<typeof setTimeout> | undefined;
+  let syncEventTimer: ReturnType<typeof setTimeout> | undefined;
+
+  const syncEventDelayMs = 150;
+
+  function clearSyncEventTimer() {
+    if (syncEventTimer !== undefined) {
+      clearTimeout(syncEventTimer);
+      syncEventTimer = undefined;
+    }
+  }
 
   function clearTimer() {
     if (timer !== undefined) {
@@ -136,6 +146,7 @@ export function subscribeSmartSync(
   function handleVisibility() {
     if (document.visibilityState === "hidden") {
       clearTimer();
+      clearSyncEventTimer();
     } else {
       handleFocus();
     }
@@ -143,17 +154,28 @@ export function subscribeSmartSync(
 
   function handleOffline() {
     clearTimer();
+    clearSyncEventTimer();
   }
 
   function handleSyncEvent() {
     if (!canRefresh()) return;
 
-    if (running) {
-      queued = true;
-      return;
-    }
+    // Combine closely spaced notifications without
+    // postponing refresh indefinitely during event bursts.
+    if (syncEventTimer !== undefined) return;
 
-    void refresh(true);
+    syncEventTimer = setTimeout(() => {
+      syncEventTimer = undefined;
+
+      if (!canRefresh()) return;
+
+      if (running) {
+        queued = true;
+        return;
+      }
+
+      void refresh(true);
+    }, syncEventDelayMs);
   }
 
   function handleStorage(event: StorageEvent) {
@@ -166,6 +188,8 @@ export function subscribeSmartSync(
     auth,
     (user) => {
       if (disposed) return;
+
+      clearSyncEventTimer();
 
       currentUser = user;
       initialized = true;
@@ -189,6 +213,7 @@ export function subscribeSmartSync(
   return () => {
     disposed = true;
     clearTimer();
+    clearSyncEventTimer();
     unsubscribe();
 
     window.removeEventListener(SYNC_EVENT, handleSyncEvent);

@@ -73,6 +73,7 @@ async function request(path: string) {
       Authorization: `Bearer ${token}`,
     },
     cache: "no-store",
+    signal: AbortSignal.timeout(15000),
   });
 
   const data = await response.json();
@@ -187,7 +188,7 @@ export default function StudentMaterials({
       async (user) => {
         if (user) await loadSubjects();
       },
-      { intervalMs: 30000 }
+      { intervalMs: 60000 }
     );
 
     return () => {
@@ -210,10 +211,22 @@ export default function StudentMaterials({
   useEffect(() => {
     let active = true;
 
-    async function loadMaterials(initial: boolean) {
+    async function loadMaterials(
+      initial: boolean,
+      uid: string
+    ) {
+      const isCurrent = () =>
+        active && auth.currentUser?.uid === uid;
+
+      if (!isCurrent()) return;
       if (initial) {
         setLoading(true);
         setMaterials([]);
+
+        if (bookmarksOnly) {
+          setBookmarkIds(new Set());
+          setBookmarksReady(false);
+        }
       }
 
       setError("");
@@ -226,7 +239,7 @@ export default function StudentMaterials({
           let savedPage = 1;
           const savedLimit = 100;
 
-          while (active) {
+          while (isCurrent()) {
             const result = await getStudentBookmarks(
               savedType || undefined,
               savedPage,
@@ -246,11 +259,16 @@ export default function StudentMaterials({
           }
 
           if (
-            active &&
+            isCurrent() &&
             bookmarkVersion % 2 === 0 &&
             bookmarkVersion === bookmarkMutation.current
           ) {
             setMaterials(found);
+            setBookmarkIds(
+              new Set(found.map((item) => item.id))
+            );
+            setBookmarksReady(true);
+            setBookmarkError("");
           }
 
           return;
@@ -274,7 +292,7 @@ export default function StudentMaterials({
           `/api/student/materials?${params}`
         );
 
-        if (active) {
+        if (isCurrent()) {
           const total = Number(data.total ?? 0);
           const lastPage = Math.max(
             1,
@@ -291,7 +309,7 @@ export default function StudentMaterials({
         }
 
       } catch (err) {
-        if (active) {
+        if (isCurrent()) {
           setError(
             err instanceof Error
               ? err.message
@@ -300,7 +318,7 @@ export default function StudentMaterials({
         }
 
       } finally {
-        if (active) {
+        if (isCurrent()) {
           setLoading(false);
         }
       }
@@ -313,11 +331,16 @@ export default function StudentMaterials({
           if (active) {
             setMaterials([]);
             setLoading(false);
+
+            if (bookmarksOnly) {
+              setBookmarkIds(new Set());
+              setBookmarksReady(false);
+            }
           }
           return;
         }
 
-        await loadMaterials(initial);
+        await loadMaterials(initial, user.uid);
       },
       { intervalMs: 30000 }
     );
@@ -341,8 +364,10 @@ export default function StudentMaterials({
   ]);
 
   useEffect(() => {
-    let active = true;
+    // Saved materials already provide their IDs.
+    if (bookmarksOnly) return;
 
+    let active = true;
 
     async function loadBookmarks() {
       const version = bookmarkMutation.current;
@@ -390,7 +415,7 @@ export default function StudentMaterials({
       active = false;
       unsubscribe();
     };
-  }, [bookmarkRetry]);
+  }, [bookmarkRetry, bookmarksOnly]);
 
   function retryBookmarks() {
     setBookmarksReady(false);

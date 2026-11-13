@@ -72,8 +72,13 @@ export default function RoleGuard({
             return;
           }
 
-          // Refresh credentials before checking the backend.
-          await user.getIdToken(true);
+          // Firebase renews expiring tokens automatically.
+          // Force a fresh token only during initial verification.
+          // Background checks still validate account permissions
+          // through Flask on every synchronization cycle.
+          if (initial) {
+            await user.getIdToken(true);
+          }
 
           if (!isCurrent()) return;
 
