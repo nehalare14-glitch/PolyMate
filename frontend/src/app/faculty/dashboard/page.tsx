@@ -342,7 +342,6 @@ export default function FacultyDashboardPage() {
             {branch && (
               <p className="mt-3 text-sm text-blue-100 sm:text-base">
                 {branchNames[branch] || branch}
-                {" Â· C24"}
               </p>
             )}
 
@@ -602,7 +601,7 @@ export default function FacultyDashboardPage() {
                     <p className="mt-1 text-xs text-slate-500 dark:text-slate-400 sm:text-sm">
                       {materialTypes[material.material_type] ||
                         material.material_type}
-                      {" Â· Semester "}
+                      {" - Semester "}
                       {material.semester}
                     </p>
 
