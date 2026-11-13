@@ -1,4 +1,6 @@
-"use client";
+﻿"use client";
+
+import PDFViewer from "@/components/shared/PDFViewerDynamic";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -355,7 +357,7 @@ export default function FacultyDashboardPage() {
             {branch && (
               <p className="mt-3 text-sm text-blue-100 sm:text-base">
                 {branchNames[branch] || branch}
-                {" · C24"}
+                {" Â· C24"}
               </p>
             )}
 
@@ -615,7 +617,7 @@ export default function FacultyDashboardPage() {
                     <p className="mt-1 text-xs text-slate-500 dark:text-slate-400 sm:text-sm">
                       {materialTypes[material.material_type] ||
                         material.material_type}
-                      {" · Semester "}
+                      {" Â· Semester "}
                       {material.semester}
                     </p>
 
@@ -683,11 +685,9 @@ export default function FacultyDashboardPage() {
               </button>
             </header>
 
-            <iframe
-              src={preview.url + "#toolbar=0&navpanes=0"}
+            <PDFViewer
+              url={preview.url}
               title={preview.title}
-              className="min-h-0 w-full flex-1 border-0 bg-slate-100"
-              referrerPolicy="no-referrer"
             />
           </div>
         </div>
@@ -695,3 +695,4 @@ export default function FacultyDashboardPage() {
     </div>
   );
 }
+

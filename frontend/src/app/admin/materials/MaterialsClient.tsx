@@ -1,5 +1,7 @@
 ﻿"use client";
 
+import PDFViewer from "@/components/shared/PDFViewerDynamic";
+
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -325,7 +327,7 @@ export default function MaterialsClient() {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
 
-      <aside className={`fixed inset-y-0 left-0 z-50 w-64 border-r border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900 lg:translate-x-0 ${
+      <aside className={`fixed inset-y-0 left-0 z-50 w-64 max-w-[85vw] overflow-y-auto border-r border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900 lg:translate-x-0 ${
         sidebar ? "translate-x-0" : "-translate-x-full"
       }`}>
         <div className="flex h-20 items-center justify-between border-b border-slate-200 px-6 dark:border-slate-700">
@@ -379,7 +381,7 @@ export default function MaterialsClient() {
           <ThemeToggle />
         </header>
 
-        <main className="mx-auto max-w-7xl space-y-6 p-5 md:p-8">
+        <main className="mx-auto max-w-7xl space-y-6 p-3 sm:p-5 md:p-8">
 
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
@@ -406,7 +408,7 @@ export default function MaterialsClient() {
             </div>
           )}
 
-          <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
+          <div className="grid grid-cols-1 min-[380px]:grid-cols-2 gap-4 xl:grid-cols-4">
             {[
               { label: "Total Materials", value: stats?.total, icon: Library, filter: "all" },
               { label: "Published", value: stats?.published, icon: CheckCircle2, filter: "published" },
@@ -691,11 +693,16 @@ export default function MaterialsClient() {
                 <X size={19} /> Close
               </button>
             </div>
-            <iframe src={preview.url} title={preview.title}
-              className="w-full flex-1 border-0" />
+            <PDFViewer
+              url={preview.url}
+              title={preview.title}
+            />
           </section>
         </div>
       )}
     </div>
   );
 }
+
+
+

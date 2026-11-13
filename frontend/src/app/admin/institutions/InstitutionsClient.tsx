@@ -153,7 +153,7 @@ export default function InstitutionsClient() {
   ];
 
   return (
-    <main className="min-h-screen bg-slate-50 p-5 text-slate-900 dark:bg-slate-950 dark:text-slate-100 md:p-8">
+    <main className="min-h-screen bg-slate-50 p-3 sm:p-5 text-slate-900 dark:bg-slate-950 dark:text-slate-100 md:p-8">
 
       <div className="mx-auto max-w-7xl space-y-6">
 
@@ -192,7 +192,7 @@ export default function InstitutionsClient() {
           </div>
         )}
 
-        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <div className="grid grid-cols-1 min-[380px]:grid-cols-2 gap-4 lg:grid-cols-4">
           {statistics.map(({ label, value, icon: Icon, filter }) => (
             <button
               key={label}
@@ -441,3 +441,4 @@ export default function InstitutionsClient() {
     </main>
   );
 }
+

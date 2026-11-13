@@ -1,5 +1,7 @@
 ﻿"use client";
 
+import PDFViewer from "@/components/shared/PDFViewerDynamic";
+
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { onAuthStateChanged } from "firebase/auth";
@@ -648,11 +650,9 @@ export default function FacultyMaterialsPage() {
               </button>
             </header>
 
-            <iframe
-              src={preview.url + "#toolbar=0&navpanes=0"}
+            <PDFViewer
+              url={preview.url}
               title={preview.title}
-              className="min-h-0 w-full flex-1 border-0 bg-slate-100 dark:bg-slate-800"
-              referrerPolicy="no-referrer"
             />
           </div>
         </div>
@@ -660,4 +660,5 @@ export default function FacultyMaterialsPage() {
     </div>
   );
 }
+
 

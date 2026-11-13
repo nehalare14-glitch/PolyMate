@@ -424,7 +424,7 @@ export default function FacultyClient() {
           </button>
         </div>
 
-        <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
+        <div className="grid grid-cols-1 min-[380px]:grid-cols-2 gap-4 xl:grid-cols-4">
           {cards.map(card => (
             <button key={card.label}
               onClick={() => {
@@ -810,7 +810,7 @@ export default function FacultyClient() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-5 border-y
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 border-y
               border-slate-200 py-5 dark:border-slate-700">
 
               {[
@@ -845,7 +845,7 @@ export default function FacultyClient() {
               Academic Contributions
             </h3>
 
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               {[
                 ["Total PDFs", profile.materials],
                 ["Published", profile.published_materials],
@@ -958,3 +958,5 @@ export default function FacultyClient() {
     </main>
   );
 }
+
+

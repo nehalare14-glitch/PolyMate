@@ -1,10 +1,9 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  Bot,
   BookOpen,
   FileUp,
   Files,
@@ -58,7 +57,7 @@ export default function FacultySidebar() {
 
     return (
       <Link
-        key={item.href}
+        key={item.href} aria-current={active ? "page" : undefined}
         href={item.href}
         onClick={() => setOpen(false)}
         className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-colors ${
@@ -88,7 +87,7 @@ export default function FacultySidebar() {
           type="button"
           onClick={() => setOpen(!open)}
           aria-label={open ? "Close navigation" : "Open navigation"}
-          aria-expanded={open}
+          aria-expanded={open} aria-controls="faculty-sidebar"
           className="rounded-lg p-2 hover:bg-slate-100 dark:hover:bg-[#223553]"
         >
           {open ? <X size={22} /> : <Menu size={22} />}
@@ -104,12 +103,20 @@ export default function FacultySidebar() {
         />
       )}
 
-      <aside
-        className={`fixed inset-y-0 left-0 z-40 flex w-72 flex-col border-r border-[#30415D] bg-[#0F1D38] p-5 text-white transition-transform md:translate-x-0 ${
+      <aside id="faculty-sidebar"
+        className={`fixed inset-y-0 left-0 z-40 flex w-72 max-w-[85vw] flex-col border-r border-[#30415D] bg-[#0F1D38] p-5 text-white transition-transform motion-reduce:transition-none md:translate-x-0 ${
           open ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        <div className="mb-10 flex items-center gap-3 px-2">
+        <div className="mb-6 flex items-center gap-3 px-2 sm:mb-10">
+          <button
+            type="button"
+            onClick={() => setOpen(false)}
+            aria-label="Close navigation"
+            className="absolute right-3 top-3 rounded-lg p-2 hover:bg-[#223553] md:hidden"
+          >
+            <X size={20} />
+          </button>
           <div className="rounded-xl bg-blue-600 p-2">
             <GraduationCap size={25} />
           </div>
@@ -119,7 +126,7 @@ export default function FacultySidebar() {
           </div>
         </div>
 
-        <nav className="flex-1 space-y-2" aria-label="Faculty navigation">
+        <nav className="min-h-0 flex-1 space-y-2 overflow-y-auto" aria-label="Faculty navigation">
           {links}
         </nav>
 
@@ -130,3 +137,4 @@ export default function FacultySidebar() {
     </>
   );
 }
+

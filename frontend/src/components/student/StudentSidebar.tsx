@@ -1,10 +1,9 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import {
-  Bot,
   BookOpen,
   Bookmark,
   FileText,
@@ -174,6 +173,7 @@ export default function StudentSidebar() {
     </>
   );
 }
+
 
 
 
