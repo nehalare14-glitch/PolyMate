@@ -365,35 +365,34 @@ def list_notifications():
     except ValueError as exc:
         return jsonify({"error": str(exc)}), 400
 
-    db = get_supabase()
-
     result = (
-        db.table("community_notifications")
-        .select(
-            "id,request_id,title,message,"
-            "is_read,created_at,read_at"
+        get_supabase()
+        .rpc(
+            "polymate_student_notifications",
+            {
+                "p_uid": g.firebase_uid,
+                "p_offset": offset,
+                "p_limit": limit,
+            },
         )
-        .eq("recipient_uid", g.firebase_uid)
-        .order("created_at", desc=True)
-        .order("id", desc=True)
-        .range(offset, offset + limit - 1)
         .execute()
     )
 
-    unread = (
-        db.table("community_notifications")
-        .select("id", count="exact")
-        .eq("recipient_uid", g.firebase_uid)
-        .eq("is_read", False)
-        .limit(1)
-        .execute()
-    )
+    payload = result.data
+
+    if not isinstance(payload, dict):
+        raise RuntimeError(
+            "Invalid notification RPC response"
+        )
 
     return jsonify({
-        "notifications": result.data or [],
-        "unread_count": unread.count or 0,
+        "notifications": payload.get(
+            "notifications", []
+        ),
+        "unread_count": payload.get(
+            "unread_count", 0
+        ),
     })
-
 
 # ==========================================
 # MARK NOTIFICATION AS READ
