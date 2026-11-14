@@ -1,8 +1,12 @@
-import path from "node:path";
+﻿import path from "node:path";
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+
+  experimental: {
+    inlineCss: true,
+  },
 
   cacheComponents: true,
   partialPrefetching: true,
@@ -19,6 +23,33 @@ const nextConfig: NextConfig = {
 
   async headers() {
     return [
+      {
+        source: "/icons/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=604800, stale-while-revalidate=86400",
+          },
+        ],
+      },
+      {
+        source: "/images/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=604800, stale-while-revalidate=86400",
+          },
+        ],
+      },
+      {
+        source: "/manifest.webmanifest",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=3600, must-revalidate",
+          },
+        ],
+      },
       {
         source: "/sw.js",
         headers: [
@@ -58,3 +89,5 @@ const nextConfig: NextConfig = {
 };
 
 export default nextConfig;
+
+
