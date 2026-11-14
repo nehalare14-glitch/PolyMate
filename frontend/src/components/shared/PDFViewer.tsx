@@ -35,13 +35,15 @@ function PDFViewerContent({
 }: PDFViewerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
 
+  const pageRefs = useRef<Map<number, HTMLDivElement>>(
+    new Map()
+  );
+
   const [numPages, setNumPages] = useState(0);
   const [pageNumber, setPageNumber] = useState(1);
   const [zoom, setZoom] = useState(1);
   const [width, setWidth] = useState(320);
   const [error, setError] = useState("");
-
-
 
   useEffect(() => {
     const element = containerRef.current;
@@ -49,14 +51,17 @@ function PDFViewerContent({
 
     const observer = new ResizeObserver(([entry]) => {
       setWidth(
-        Math.max(100, Math.floor(entry.contentRect.width))
+        Math.max(
+          100,
+          Math.min(900, Math.floor(entry.contentRect.width) - 4)
+        )
       );
     });
 
     observer.observe(element);
+
     return () => observer.disconnect();
   }, []);
-
 
   useEffect(() => {
     return () => {
@@ -66,8 +71,51 @@ function PDFViewerContent({
     };
   }, [url]);
 
+  function goToPage(page: number) {
+    const target = Math.max(1, Math.min(numPages, page));
+
+    const element = pageRefs.current.get(target);
+
+    if (element) {
+      element.scrollIntoView({
+        behavior: "auto",
+        block: "start",
+      });
+
+      setPageNumber(target);
+    }
+  }
+
+  function updateCurrentPage() {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const bounds = container.getBoundingClientRect();
+
+    const center =
+      bounds.top + container.clientHeight / 2;
+
+    let closest = 1;
+    let distance = Infinity;
+
+    pageRefs.current.forEach((element, number) => {
+      const rect = element.getBoundingClientRect();
+
+      const currentDistance = Math.abs(
+        rect.top + rect.height / 2 - center
+      );
+
+      if (currentDistance < distance) {
+        closest = number;
+        distance = currentDistance;
+      }
+    });
+
+    setPageNumber(closest);
+  }
+
   const buttonClass =
-    "flex h-11 w-11 shrink-0 items-center justify-center rounded-lg " +
+    "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg " +
     "hover:bg-slate-200 disabled:opacity-40 " +
     "dark:hover:bg-slate-700";
 
@@ -84,9 +132,7 @@ function PDFViewerContent({
           className={buttonClass}
           aria-label="Previous page"
           disabled={pageNumber <= 1}
-          onClick={() =>
-            setPageNumber((p) => Math.max(1, p - 1))
-          }
+          onClick={() => goToPage(pageNumber - 1)}
         >
           <ChevronLeft size={20} />
         </button>
@@ -100,9 +146,7 @@ function PDFViewerContent({
           className={buttonClass}
           aria-label="Next page"
           disabled={!numPages || pageNumber >= numPages}
-          onClick={() =>
-            setPageNumber((p) => Math.min(numPages, p + 1))
-          }
+          onClick={() => goToPage(pageNumber + 1)}
         >
           <ChevronRight size={20} />
         </button>
@@ -123,7 +167,7 @@ function PDFViewerContent({
 
         <button
           type="button"
-          className="min-h-11 min-w-12 rounded-lg px-1 py-2 text-sm font-semibold"
+          className="min-h-10 min-w-12 rounded-lg px-1 py-2 text-sm font-semibold"
           aria-label="Reset zoom"
           onClick={() => setZoom(1)}
         >
@@ -150,23 +194,26 @@ function PDFViewerContent({
         >
           <RotateCcw size={17} />
         </button>
-
       </div>
 
-      {/* PDF document */}
+      {/* Continuous vertical PDF document */}
       <div
         ref={containerRef}
-        className="min-h-0 min-w-0 flex-1 overflow-auto overscroll-contain p-2 sm:p-3"
+        onScroll={updateCurrentPage}
+        className="min-h-0 min-w-0 flex-1 overflow-auto overscroll-contain p-2 sm:p-4"
       >
         {error ? (
           <div className="flex flex-col items-center gap-3 p-8 text-center text-slate-600 dark:text-slate-300">
             <AlertCircle size={32} />
+
             <p className="font-semibold">
               Unable to display PDF
             </p>
+
             <p className="break-all text-sm">
               {error}
             </p>
+
             <p className="text-sm">
               Please close the preview and try again.
             </p>
@@ -192,28 +239,50 @@ function PDFViewerContent({
               </div>
             }
           >
-            <div className="mx-auto w-max max-w-none shadow-sm">
-              <Page
-                pageNumber={pageNumber}
-                width={width}
-                scale={zoom}
-                devicePixelRatio={Math.min(
-                  typeof window !== "undefined"
-                    ? window.devicePixelRatio
-                    : 1,
-                  2
-                )}
-                renderTextLayer={true}
-                renderAnnotationLayer={true}
-                onRenderError={(err) =>
-                  setError(err.message)
-                }
-                loading={
-                  <div className="p-8 text-center text-sm text-slate-500">
-                    Rendering page...
+            <div className="mx-auto flex w-max min-w-full flex-col items-center gap-4 pb-6">
+
+              {Array.from(
+                { length: numPages },
+                (_, index) => index + 1
+              ).map((number) => (
+                <div
+                  key={number}
+                  ref={(element) => {
+                    if (element) {
+                      pageRefs.current.set(number, element);
+                    } else {
+                      pageRefs.current.delete(number);
+                    }
+                  }}
+                  className="scroll-mt-2"
+                >
+                  <div className="overflow-hidden bg-white shadow-md">
+
+                    <Page
+                      pageNumber={number}
+                      width={width}
+                      scale={zoom}
+                      devicePixelRatio={1}
+                      renderTextLayer={true}
+                      renderAnnotationLayer={true}
+                      onRenderError={(err) =>
+                        setError(err.message)
+                      }
+                      loading={
+                        <div className="p-8 text-center text-sm text-slate-500">
+                          Rendering page {number}...
+                        </div>
+                      }
+                    />
+
                   </div>
-                }
-              />
+
+                  <p className="mt-2 text-center text-xs text-slate-500 dark:text-slate-400">
+                    Page {number} of {numPages}
+                  </p>
+                </div>
+              ))}
+
             </div>
           </Document>
         )}
