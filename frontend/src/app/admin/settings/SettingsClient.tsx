@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
@@ -31,6 +31,7 @@ import {
 } from "firebase/auth";
 
 import { auth } from "@/lib/firebase";
+import AuthenticationThemeToggle from "@/components/theme/AuthenticationThemeToggle";
 
 const API =
   process.env.NEXT_PUBLIC_API_URL ||
@@ -824,6 +825,7 @@ export default function SettingsClient() {
             {/* Platform */}
             {tab === "platform" && (
               <>
+                <AuthenticationThemeToggle />
 
                 <section className={card}>
                   <div className="flex items-center gap-3">
@@ -1252,3 +1254,4 @@ export default function SettingsClient() {
     </div>
   );
 }
+

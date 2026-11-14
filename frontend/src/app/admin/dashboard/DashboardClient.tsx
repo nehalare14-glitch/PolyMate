@@ -2,7 +2,7 @@
 
 import NotificationBell from "@/components/notifications/NotificationBell";
 import ThemeToggle from "@/components/theme/ThemeToggle";
-import AuthenticationThemeToggle from "@/components/theme/AuthenticationThemeToggle";
+
 import AdminOverview from "./AdminOverview";
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -322,10 +322,7 @@ export default function AdminDashboard() {
               Loading Admin Dashboard...
             </div>
           ) : !error ? (
-            <>
-              <AdminOverview name={name} />
-              <AuthenticationThemeToggle />
-            </>
+            <AdminOverview name={name} />
           ) : null}
 
         </main>
@@ -333,5 +330,6 @@ export default function AdminDashboard() {
     </div>
   );
 }
+
 
 
