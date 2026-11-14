@@ -1,3 +1,4 @@
+﻿from datetime import datetime, timezone
 from services.pdf_preview import secure_pdf_response
 import uuid
 from flask import Blueprint, request, jsonify, g
@@ -26,6 +27,7 @@ def get_assigned_subjects():
             .table("study_materials")
             .select("branch,semester,subject_name")
             .eq("faculty_uid", g.firebase_uid)
+            .neq("status", "trash")
             .execute()
         )
 
@@ -167,6 +169,7 @@ def get_materials():
                 "material_type,created_at"
             )
             .eq("faculty_uid", g.firebase_uid)
+            .neq("status", "trash")
             .order("created_at", desc=True)
             .execute()
         )
@@ -188,6 +191,7 @@ def preview_pdf(material_id):
             .select("id,title,storage_path")
             .eq("id", str(material_id))
             .eq("faculty_uid", g.firebase_uid)
+            .neq("status", "trash")
             .limit(1)
             .execute()
         )
@@ -215,6 +219,7 @@ def find_owned_material(material_id):
         .select("*")
         .eq("id", str(material_id))
         .eq("faculty_uid", g.firebase_uid)
+        .neq("status", "trash")
         .limit(1)
         .execute()
     )
@@ -269,6 +274,7 @@ def update_material(material_id):
             .update(changes)
             .eq("id", str(material_id))
             .eq("faculty_uid", g.firebase_uid)
+            .neq("status", "trash")
             .execute()
         )
 
@@ -372,38 +378,69 @@ def replace_material_pdf(material_id):
 @faculty_materials_bp.delete("/api/faculty/materials/<uuid:material_id>")
 @require_role("faculty")
 def delete_material(material_id):
-    try:
-        db, material = find_owned_material(material_id)
+    from flask import current_app
 
-        if not material:
-            return jsonify({"error": "Material not found"}), 404
+    try:
+        db = get_supabase()
 
         result = (
             db.table("study_materials")
-            .delete()
+            .select("*")
             .eq("id", str(material_id))
             .eq("faculty_uid", g.firebase_uid)
-            .eq("storage_path", material["storage_path"])
+            .limit(1)
             .execute()
         )
 
         if not result.data:
-            return jsonify({"error": "Material changed. Try again."}), 409
+            return jsonify({
+                "error": "Material not found"
+            }), 404
 
-    except Exception:
-        return jsonify({"error": "Unable to delete material"}), 503
+        material = result.data[0]
 
-    try:
-        db.storage.from_(BUCKET).remove([
-            material["storage_path"]
-        ])
+        # Already deleted: safely return success.
+        if material.get("status") == "trash":
+            return jsonify({
+                "message": "Material already moved to Trash"
+            }), 200
 
-    except Exception:
+        timestamp = datetime.now(
+            timezone.utc
+        ).isoformat()
+
+        updated = (
+            db.table("study_materials")
+            .update({
+                "status": "trash",
+                "deleted_at": timestamp,
+                "deleted_by": g.firebase_uid,
+                "updated_at": timestamp
+            })
+            .eq("id", str(material_id))
+            .eq("faculty_uid", g.firebase_uid)
+            .eq("status", material["status"])
+            .execute()
+        )
+
+        if not updated.data:
+            return jsonify({
+                "error": "Material changed. Try again."
+            }), 409
+
         return jsonify({
-            "message": "Material removed",
-            "warning": "Storage file requires cleanup"
-        })
+            "message": "PDF moved to Trash successfully",
+            "material_id": str(material_id),
+            "status": "trash"
+        }), 200
 
-    return jsonify({
-        "message": "PDF deleted successfully"
-    })
+    except Exception:
+        current_app.logger.exception(
+            "Faculty material trash operation failed"
+        )
+
+        return jsonify({
+            "error": "Unable to delete material"
+        }), 503
+
+

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { fetchSecurePDF, PDF_API_BASE } from "@/lib/secure-pdf";
 
@@ -479,7 +479,7 @@ export default function FacultyMaterialsPage() {
                     </p>
 
                     <p className="mt-1 text-xs text-slate-500">
-                      {material.branch} · Semester {material.semester}
+                      {material.branch} Â· Semester {material.semester}
                     </p>
 
                     <p className="mt-2 text-xs font-medium text-blue-600 dark:text-blue-400">
@@ -542,7 +542,7 @@ export default function FacultyMaterialsPage() {
                           className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-950"
                         >
                           <Trash2 size={16} />
-                          Delete PDF
+                          Move to Trash
                         </button>
                       </div>
                     )}
@@ -645,3 +645,4 @@ export default function FacultyMaterialsPage() {
     </div>
   );
 }
+

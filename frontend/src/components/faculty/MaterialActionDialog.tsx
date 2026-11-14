@@ -75,7 +75,7 @@ export default function MaterialActionDialog({
       ? "Edit Material Details"
       : action === "replace"
       ? "Replace PDF"
-      : "Delete Material";
+      : "Move Material to Trash";
 
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
@@ -533,7 +533,7 @@ export default function MaterialActionDialog({
           {action === "delete" && (
             <>
               <p className="text-sm leading-relaxed text-slate-600 dark:text-slate-300">
-                Are you sure you want to delete this material?
+                Are you sure you want to move this material to Trash?
               </p>
 
               <div className="flex items-center gap-3 rounded-xl border border-red-200 bg-red-50 p-4 dark:border-red-900 dark:bg-red-950/40">
@@ -554,7 +554,7 @@ export default function MaterialActionDialog({
               </div>
 
               <p className="text-sm font-medium text-red-600 dark:text-red-400">
-                This action cannot be undone.
+                This material will no longer be available to students. An administrator can restore it from Trash if needed.
               </p>
             </>
           )}
@@ -596,10 +596,11 @@ export default function MaterialActionDialog({
               ? "Save Changes"
               : action === "replace"
               ? "Replace PDF"
-              : "Delete PDF"}
+              : "Move to Trash"}
           </button>
         </footer>
       </form>
     </div>
   );
 }
+
