@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
@@ -111,7 +111,7 @@ export default function StudentSidebar() {
           PolyMate
         </Link>
         <div className="flex items-center gap-2">
-          <NotificationBell role="student" />
+          <NotificationBell role="student" viewport="mobile" />
           
 
         <button

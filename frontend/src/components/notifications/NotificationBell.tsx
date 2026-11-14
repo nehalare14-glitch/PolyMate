@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useCallback, useEffect, useState } from "react";
 import { Bell, Check, X, RefreshCw } from "lucide-react";
@@ -26,7 +26,7 @@ type AdminSummary = {
   unread_tickets: number;
 };
 
-export default function NotificationBell({
+function NotificationBellContent({
   role,
 }: {
   role: "student" | "admin";
@@ -371,3 +371,47 @@ export default function NotificationBell({
 }
 
 
+
+
+export default function NotificationBell({
+  role,
+  viewport = "all",
+}: {
+  role: "student" | "admin";
+  viewport?: "all" | "mobile" | "desktop";
+}) {
+  const [enabled, setEnabled] = useState(
+    viewport === "all"
+  );
+
+  useEffect(() => {
+    if (viewport === "all") {
+      setEnabled(true);
+      return;
+    }
+
+    const media = window.matchMedia(
+      "(min-width: 768px)"
+    );
+
+    const update = () => {
+      setEnabled(
+        viewport === "desktop"
+          ? media.matches
+          : !media.matches
+      );
+    };
+
+    update();
+
+    media.addEventListener("change", update);
+
+    return () => {
+      media.removeEventListener("change", update);
+    };
+  }, [viewport]);
+
+  if (!enabled) return null;
+
+  return <NotificationBellContent role={role} />;
+}
