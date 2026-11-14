@@ -434,3 +434,30 @@ def mark_notification_read(notification_id):
     return jsonify({
         "message": "Notification marked as read"
     })
+
+# ==========================================
+# MARK ALL STUDENT NOTIFICATIONS AS READ
+# ==========================================
+
+@student_community_bp.patch("/notifications/read-all")
+@student_only
+def mark_all_notifications_read():
+
+    from datetime import datetime, timezone
+
+    (
+        get_supabase()
+        .table("community_notifications")
+        .update({
+            "is_read": True,
+            "read_at": datetime.now(timezone.utc).isoformat(),
+        })
+        .eq("recipient_uid", g.firebase_uid)
+        .eq("is_read", False)
+        .execute()
+    )
+
+    return jsonify({
+        "message": "All notifications marked as read"
+    })
+

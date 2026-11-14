@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 
 import SignOutButton from "@/components/auth/SignOutButton";
+import NotificationBell from "@/components/notifications/NotificationBell";
 
 const navigation = [
   {
@@ -109,6 +110,9 @@ export default function StudentSidebar() {
           </span>
           PolyMate
         </Link>
+        <div className="flex items-center gap-2">
+          <NotificationBell role="student" />
+          
 
         <button
           type="button"
@@ -120,6 +124,7 @@ export default function StudentSidebar() {
         >
           {open ? <X size={22} /> : <Menu size={22} />}
         </button>
+        </div>
       </header>
 
       {open && (
@@ -213,3 +218,4 @@ export default function StudentSidebar() {
     </>
   );
 }
+

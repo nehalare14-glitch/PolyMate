@@ -1,5 +1,6 @@
-"use client";
+﻿"use client";
 
+import NotificationBell from "@/components/notifications/NotificationBell";
 import ThemeToggle from "@/components/theme/ThemeToggle";
 import AdminOverview from "./AdminOverview";
 import { useEffect, useState } from "react";
@@ -299,6 +300,7 @@ export default function AdminDashboard() {
     </div>
 
     <ThemeToggle />
+    <NotificationBell role="admin" />
   </div>
 </header>
 
@@ -327,3 +329,4 @@ export default function AdminDashboard() {
     </div>
   );
 }
+
