@@ -53,7 +53,7 @@ function PDFViewerContent({
       setWidth(
         Math.max(
           100,
-          Math.min(900, Math.floor(entry.contentRect.width) - 4)
+          Math.min(1100, Math.floor(entry.contentRect.width) - 4)
         )
       );
     });
@@ -262,7 +262,14 @@ function PDFViewerContent({
                       pageNumber={number}
                       width={width}
                       scale={zoom}
-                      devicePixelRatio={1}
+                      devicePixelRatio={
+                        Math.min(
+                          typeof window !== "undefined"
+                            ? Math.max(1.5, window.devicePixelRatio)
+                            : 1.5,
+                          2
+                        )
+                      }
                       renderTextLayer={true}
                       renderAnnotationLayer={true}
                       onRenderError={(err) =>
