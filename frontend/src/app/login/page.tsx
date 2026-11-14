@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
@@ -202,11 +202,13 @@ export default function LoginPage() {
             <div className="mb-3 flex justify-center">
               <Image
                 src={logoLight}
+                sizes="220px"
                 alt="PolyMate"
                 className="h-auto w-full max-w-[220px] rounded-xl object-contain dark:hidden"
               />
               <Image
                 src={logoDark}
+                sizes="220px"
                 alt="PolyMate"
                 className="hidden h-auto w-full max-w-[220px] rounded-xl object-contain dark:block"
               />
@@ -363,3 +365,4 @@ export default function LoginPage() {
     </main>
   );
 }
+
