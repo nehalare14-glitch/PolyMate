@@ -72,7 +72,7 @@ function getThemeGroup(pathname: string): ThemeGroup {
     return "admin";
   }
 
-  return "public";
+  return "auth";
 }
 
 function getTheme(group: ThemeGroup): Theme {
@@ -217,3 +217,5 @@ export function useTheme() {
 
   return context;
 }
+
+
