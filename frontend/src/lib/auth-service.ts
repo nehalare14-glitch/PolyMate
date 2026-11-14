@@ -1,5 +1,6 @@
-import {
+﻿import {
   GoogleAuthProvider,
+  browserPopupRedirectResolver,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signInWithPopup,
@@ -106,7 +107,7 @@ export async function loginWithEmail(
 export async function loginWithGoogle() {
   const provider = new GoogleAuthProvider();
 
-  await signInWithPopup(auth, provider);
+  await signInWithPopup(auth, provider, browserPopupRedirectResolver);
 
   try {
     return await apiRequest("/api/me");
@@ -338,3 +339,4 @@ export async function getStudentBookmarkIds(): Promise<string[]> {
 
   return result.ids;
 }
+
