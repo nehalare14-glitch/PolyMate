@@ -1,4 +1,4 @@
-from routes.faculty_materials import faculty_materials_bp
+﻿from routes.faculty_materials import faculty_materials_bp
 from routes.student_materials import student_materials_bp
 
 import os
@@ -173,6 +173,10 @@ from routes.community_email_jobs import community_email_jobs_bp
 
 app.register_blueprint(community_email_jobs_bp)
 
+from routes.system_settings import system_settings_bp
+
+app.register_blueprint(system_settings_bp)
+
 from middleware.security import init_security
 
 init_security(app)
@@ -184,3 +188,4 @@ if __name__ == "__main__":
         port=5000,
         debug=False
     )
+
