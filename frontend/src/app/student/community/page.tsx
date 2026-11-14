@@ -37,6 +37,7 @@ type Ticket = {
   subject_name: string | null;
   material_type: string | null;
   material_id: string | null;
+  material_available?: boolean;
   admin_response: string | null;
   escalated_at?: string | null;
   created_at: string;
@@ -926,17 +927,37 @@ export default function StudentCommunityPage() {
                   {selected.status === "completed" &&
                     selected.material_id && (
 
-                    <Link
-                      href={
-                        selected.material_type === "question-paper"
-                          ? "/student/question-papers"
-                          : "/student/notes"
-                      }
-                      className={primary}
-                    >
-                      <FileText size={17} />
-                      Browse Requested Materials
-                    </Link>
+                    selected.material_available === true ? (
+
+                      <Link
+                        href={
+                          selected.material_type === "question-paper"
+                            ? "/student/question-papers"
+                            : "/student/notes"
+                        }
+                        className={primary}
+                      >
+                        <FileText size={17} />
+                        Browse Requested Materials
+                      </Link>
+
+                    ) : (
+
+                      <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-[#30415D] dark:bg-[#172338]">
+
+                        <div className="flex items-center gap-2 font-semibold text-slate-700 dark:text-slate-200">
+                          <AlertTriangle size={18} />
+                          Material Currently Unavailable
+                        </div>
+
+                        <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
+                          This study material is currently unavailable for viewing.
+                          Your request history and administrator response remain available.
+                        </p>
+
+                      </div>
+
+                    )
 
                   )}
 

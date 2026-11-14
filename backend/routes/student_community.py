@@ -104,6 +104,47 @@ def public_request(row):
     }
 
 
+
+def add_material_availability(rows):
+    """Check linked material availability without changing request history."""
+
+    rows = rows or []
+
+    material_ids = list({
+        str(row["material_id"])
+        for row in rows
+        if row.get("material_id")
+    })
+
+    published_ids = set()
+
+    if material_ids:
+        result = (
+            get_supabase()
+            .table("study_materials")
+            .select("id")
+            .in_("id", material_ids)
+            .eq("status", "published")
+            .execute()
+        )
+
+        published_ids = {
+            str(item["id"])
+            for item in (result.data or [])
+        }
+
+    return [
+        {
+            **row,
+            "material_available": (
+                bool(row.get("material_id"))
+                and str(row["material_id"]) in published_ids
+            ),
+        }
+        for row in rows
+    ]
+
+
 def pagination():
 
     try:
@@ -265,7 +306,7 @@ def list_requests():
     )
 
     return jsonify({
-        "requests": result.data or [],
+        "requests": add_material_availability(result.data),
         "total": result.count or 0,
     })
 
@@ -311,7 +352,7 @@ def get_request(request_id):
     )
 
     return jsonify({
-        "request": result.data[0],
+        "request": add_material_availability(result.data)[0],
         "events": events.data or [],
     })
 
