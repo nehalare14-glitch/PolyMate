@@ -1,4 +1,4 @@
-﻿import {
+import {
   GoogleAuthProvider,
   browserPopupRedirectResolver,
   createUserWithEmailAndPassword,
@@ -84,24 +84,8 @@ export async function loginWithEmail(
 ) {
   await signInWithEmailAndPassword(auth, email, password);
 
-  try {
-    return await apiRequest("/api/me");
-  } catch (error) {
-    const verificationRequired =
-      error instanceof Error &&
-      (error.message.includes("not verified") ||
-       error.message.includes("verify your email"));
-
-    const profileMissing =
-      error instanceof Error &&
-      error.message.includes("Profile not found");
-
-    if (!verificationRequired && !profileMissing) {
-      await signOut(auth);
-    }
-
-    throw error;
-  }
+  // Preserve Firebase authentication on temporary API failures.
+  return await apiRequest("/api/me");
 }
 
 export async function loginWithGoogle() {
@@ -109,24 +93,8 @@ export async function loginWithGoogle() {
 
   await signInWithPopup(auth, provider, browserPopupRedirectResolver);
 
-  try {
-    return await apiRequest("/api/me");
-  } catch (error) {
-    const verificationRequired =
-      error instanceof Error &&
-      (error.message.includes("not verified") ||
-       error.message.includes("verify your email"));
-
-    const profileMissing =
-      error instanceof Error &&
-      error.message.includes("Profile not found");
-
-    if (!verificationRequired && !profileMissing) {
-      await signOut(auth);
-    }
-
-    throw error;
-  }
+  // Preserve Firebase authentication on temporary API failures.
+  return await apiRequest("/api/me");
 }
 
 export async function getCurrentProfile() {

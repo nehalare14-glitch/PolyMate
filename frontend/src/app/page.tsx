@@ -1,8 +1,10 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import { InstallAppButton } from "@/components/pwa/PWAProvider";
 import { BookOpen, GraduationCap, FileText } from "lucide-react";
 
-export default function Home() {
+import SessionRestore from "@/components/auth/SessionRestore";
+
+function HomeContent() {
   return (
     <main className="min-h-dvh bg-slate-50 text-slate-900 dark:bg-[#0B1220] dark:text-slate-100">
 
@@ -174,5 +176,14 @@ export default function Home() {
       </footer>
 
     </main>
+  );
+}
+
+
+export default function Home() {
+  return (
+    <SessionRestore>
+      <HomeContent />
+    </SessionRestore>
   );
 }

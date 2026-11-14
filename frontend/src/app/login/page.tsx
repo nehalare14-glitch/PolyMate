@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
@@ -36,7 +36,9 @@ type Profile = {
 };
 
 
-export default function LoginPage() {
+import SessionRestore from "@/components/auth/SessionRestore";
+
+function LoginPageContent() {
   const router = useRouter();
 
   const [email, setEmail] = useState("");
@@ -366,3 +368,12 @@ export default function LoginPage() {
   );
 }
 
+
+
+export default function LoginPage() {
+  return (
+    <SessionRestore>
+      <LoginPageContent />
+    </SessionRestore>
+  );
+}
