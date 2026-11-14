@@ -1,14 +1,26 @@
-"use client";
+﻿"use client";
 
 import {
   createContext,
   useContext,
   useEffect,
+  useLayoutEffect,
+  useState,
   useSyncExternalStore,
   type ReactNode,
 } from "react";
 
+import { usePathname } from "next/navigation";
+import { getAuthTheme } from "@/lib/auth-theme";
+
 type Theme = "light" | "dark";
+
+type ThemeGroup =
+  | "admin"
+  | "student"
+  | "faculty"
+  | "auth"
+  | "public";
 
 interface ThemeContextType {
   theme: Theme;
@@ -18,21 +30,65 @@ interface ThemeContextType {
 const ThemeContext =
   createContext<ThemeContextType | null>(null);
 
-const THEME_KEY = "polymate-theme";
 const THEME_EVENT = "polymate-theme-change";
 
-function getTheme(): Theme {
-  const saved = localStorage.getItem(THEME_KEY);
+function getThemeGroup(pathname: string): ThemeGroup {
+  const segments = pathname.split("/").filter(Boolean);
 
-  if (saved === "light" || saved === "dark") {
-    return saved;
+  const authPages = [
+    "login",
+    "register",
+    "forgot-password",
+    "reset-password",
+    "verify-email",
+  ];
+
+  if (
+    segments.some((segment) =>
+      authPages.includes(segment)
+    )
+  ) {
+    return "auth";
   }
 
-  return window.matchMedia(
-    "(prefers-color-scheme: dark)"
-  ).matches
-    ? "dark"
-    : "light";
+  if (
+    pathname === "/student" ||
+    pathname.startsWith("/student/")
+  ) {
+    return "student";
+  }
+
+  if (
+    pathname === "/faculty" ||
+    pathname.startsWith("/faculty/")
+  ) {
+    return "faculty";
+  }
+
+  if (
+    pathname === "/admin" ||
+    pathname.startsWith("/admin/")
+  ) {
+    return "admin";
+  }
+
+  return "public";
+}
+
+function getTheme(group: ThemeGroup): Theme {
+  if (group === "auth" || group === "public") {
+    return "light";
+  }
+
+  try {
+    return localStorage.getItem(
+      `polymate-theme-${group}`
+    ) === "dark"
+      ? "dark"
+      : "light";
+  } catch {
+    return "light";
+  }
 }
 
 function getServerTheme(): Theme {
@@ -40,18 +96,12 @@ function getServerTheme(): Theme {
 }
 
 function subscribe(callback: () => void) {
-  const media = window.matchMedia(
-    "(prefers-color-scheme: dark)"
-  );
-
   window.addEventListener(THEME_EVENT, callback);
   window.addEventListener("storage", callback);
-  media.addEventListener("change", callback);
 
   return () => {
     window.removeEventListener(THEME_EVENT, callback);
     window.removeEventListener("storage", callback);
-    media.removeEventListener("change", callback);
   };
 }
 
@@ -60,27 +110,93 @@ export function ThemeProvider({
 }: {
   children: ReactNode;
 }) {
-  const theme = useSyncExternalStore(
+  const pathname = usePathname();
+
+  const group = getThemeGroup(pathname || "/");
+
+  const [authTheme, setAuthTheme] =
+    useState<Theme>("light");
+
+  const dashboardTheme = useSyncExternalStore(
     subscribe,
-    getTheme,
+    () => getTheme(group),
     getServerTheme
   );
 
   useEffect(() => {
+    if (group !== "auth") return;
+
+    const controller = new AbortController();
+
+    async function refreshTheme() {
+      try {
+        const value = await getAuthTheme(
+          controller.signal
+        );
+
+        if (!controller.signal.aborted) {
+          setAuthTheme(value);
+        }
+      } catch {
+        // Keep the last known theme if the API is unavailable.
+      }
+    }
+
+    void refreshTheme();
+
+    window.addEventListener("focus", refreshTheme);
+
+    const interval = window.setInterval(
+      refreshTheme,
+      30000
+    );
+
+    return () => {
+      controller.abort();
+
+      window.removeEventListener(
+        "focus",
+        refreshTheme
+      );
+
+      window.clearInterval(interval);
+    };
+  }, [group, pathname]);
+
+  const theme: Theme =
+    group === "auth"
+      ? authTheme
+      : dashboardTheme;
+
+  useLayoutEffect(() => {
     document.documentElement.classList.toggle(
       "dark",
       theme === "dark"
     );
 
-    document.documentElement.style.colorScheme = theme;
-  }, [theme]);
+    document.documentElement.style.colorScheme =
+      theme;
+  }, [theme, pathname]);
 
   function toggleTheme() {
+    if (group === "auth" || group === "public") {
+      return;
+    }
+
     const next = theme === "light" ? "dark" : "light";
 
-    localStorage.setItem(THEME_KEY, next);
+    try {
+      localStorage.setItem(
+        `polymate-theme-${group}`,
+        next
+      );
 
-    window.dispatchEvent(new Event(THEME_EVENT));
+      window.dispatchEvent(
+        new Event(THEME_EVENT)
+      );
+    } catch {
+      console.warn("Unable to save theme preference");
+    }
   }
 
   return (
